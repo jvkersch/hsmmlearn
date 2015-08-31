@@ -17,6 +17,32 @@ cdef extern from "../_hsmm/src/FBImpl.h":
 cpdef _viterbi_impl(int tau_para, int j_para, int m_para,
                     double[:] d_para, double[:] p_para, double[:] pi_para,
                     double[:] pdf_para, int[:] hidden_states_para):
+    """
+    Low-level Viterbi wrapper.
+
+    Parameters
+    ----------
+    tau : int
+        Number of observations.
+    j : int
+        Number of internal states.
+    m : int
+        Number of durations. Permissible durations are 1 through m (inclusive).
+    d : array, shape=(j * m, )
+        Probabilities for the individual durations, where the first m elements
+        specify the duration distribution for state 0, and so on.
+    p : array, shape=(j * j, )
+        Transition matrix in row-major order.
+    pi : array, shape=(j, )
+        Initial state probabilities.
+    pdf : array, shape(j * tau, )
+        Likelihoods of the observations given the states. The first tau
+        elements are the likelihoods in state 0, and so on.
+    states : array, shape(tau, )
+        Output array for the reconstructed internal states.
+
+    """
+
     ViterbiImpl(tau_para, j_para, m_para, &d_para[0], &p_para[0], &pi_para[0],
                 &pdf_para[0], &hidden_states_para[0])
 
