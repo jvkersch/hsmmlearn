@@ -19,13 +19,82 @@ class DiscreteHSMMModel(object):
             the uniform distribution will be used.
 
         """
-        self._emissions = emissions
-        self._durations = durations
-        self._tmat = tmat
+        self.transmat = tmat
+        self.emissions = emissions
+        self.durations = durations
 
-        n_states = tmat.shape[0]
         if startprob is None:
-            startprob = np.full(n_states, 1.0 / n_states)
+            startprob = np.full(self.n_states, 1.0 / self.n_states)
+        self.startprob = startprob
+
+    @property
+    def n_states(self):
+        return self._tmat.shape[0]
+
+    @property
+    def transmat(self):
+        return self._tmat
+
+    @transmat.setter
+    def transmat(self, value):
+        tmat = np.asarray(value)
+        if tmat.ndim != 2 or tmat.shape[0] != tmat.shape[1]:
+            raise ValueError("Transition matrix must be square, "
+                             "but a matrix of shape {0} was received.".format(
+                                 tmat.shape))
+
+        if hasattr(self, '_tmat') and self._tmat.shape[0] != tmat.shape[0]:
+            raise ValueError(
+                ("Shape {0} of new transition matrix differs from "
+                 "previous shape {1}.").format(self._tmat.shape, tmat.shape)
+            )
+
+        # TODO Normalize transition matrix
+        self._tmat = tmat
+        self._tmat_flat = tmat.flatten()
+
+    @property
+    def emissions(self):
+        return self._emissions
+
+    @emissions.setter
+    def emissions(self, value):
+        emissions = np.asarray(value)
+        if emissions.ndim != 2 or emissions.shape[0] != self.n_states:
+            msg = "Emission matrix must be 2d and have {0} rows.".format(
+                self.n_states
+            )
+            raise ValueError(msg)
+
+        self._emissions = emissions
+
+    @property
+    def durations(self):
+        return self._durations
+
+    @durations.setter
+    def durations(self, value):
+        durations = np.asarray(value)
+        if durations.ndim != 2 or durations.shape[0] != self.n_states:
+            msg = "Duration matrix must be 2d and have {0} rows.".format(
+                self.n_states
+            )
+            raise ValueError(msg)
+
+        self._durations = durations
+        self._durations_flat = durations.flatten()
+
+    @property
+    def startprob(self):
+        return self._startprob
+
+    @startprob.setter
+    def startprob(self, value):
+        startprob = np.asarray(value)
+        if startprob.ndim != 1 or startprob.shape[0] != self.n_states:
+            msg = ("Starting probabilities must be 1d and have {0} "
+                   "elements.").format(self.n_states)
+            raise ValueError(msg)
         self._startprob = startprob
 
     def _compute_likelihood(self, obs):
@@ -42,8 +111,8 @@ class DiscreteHSMMModel(object):
             n_obs,
             n_states,
             n_durations,
-            self._durations.flatten(),  # TODO cache this in a property
-            self._tmat.flatten(),
+            self._durations_flat,
+            self._tmat_flat,
             self._startprob,
             likelihoods.flatten(),
             outputs,
