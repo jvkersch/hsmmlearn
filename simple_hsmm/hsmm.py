@@ -3,103 +3,65 @@ import numpy as np
 from ._base import _viterbi_impl
 
 
-class DiscreteHSMMModel(object):
-    """ A HSMM model for which both the durations and emissions are
-    discretely distributed.
+class HSMMModel(object):
 
-    """
-    def __init__(self, emissions, durations, tmat, startprob=None):
-        """
-        Parameters
-        ----------
-        emissions : array, shape=(n_states, n_emissions)
-            Discrete emission distribution.
-        durations : array, shape=(n_states, n_durations)
-            Duration distribution per state.
-        tmat : array, shape=(n_states, n_states)
-            Transition matrix.
-        startprob : array, shape=(n_states, )
-            Initial probabilities for the hidden states. If this is None,
-            the uniform distribution will be used.
+    def __init__(
+            self, emissions, durations, tmat, startprob=None,
+            support_cutoff=100):
 
-        """
-        self.transmat = tmat
-        self.emissions = emissions
-        self.durations = durations
+        self._tmat = self._validate_tmat(tmat)
+        self._tmat_flat = self._tmat.flatten()  # XXX .flat ?
+        self._durations = self._validate_durations(durations, support_cutoff)
+        self._durations_flat = self._durations.flatten()
+        self._emissions = self._validate_emissions(emissions)
 
         if startprob is None:
             startprob = np.full(self.n_states, 1.0 / self.n_states)
-        self.startprob = startprob
+        self._startprob = startprob
 
     @property
     def n_states(self):
         return self._tmat.shape[0]
 
-    @property
-    def transmat(self):
-        return self._tmat
-
-    @transmat.setter
-    def transmat(self, value):
-        tmat = np.asarray(value)
+    def _validate_tmat(self, tmat):
+        tmat = np.asarray(tmat)
         if tmat.ndim != 2 or tmat.shape[0] != tmat.shape[1]:
             raise ValueError("Transition matrix must be square, "
                              "but a matrix of shape {0} was received.".format(
                                  tmat.shape))
+        return tmat
 
-        if hasattr(self, '_tmat') and self._tmat.shape[0] != tmat.shape[0]:
-            raise ValueError(
-                ("Shape {0} of new transition matrix differs from "
-                 "previous shape {1}.").format(self._tmat.shape, tmat.shape)
-            )
+    def _validate_durations(self, durations, support_cutoff):
+        if isinstance(durations, np.ndarray):
+            durations = np.asarray(durations)
+            if durations.ndim != 2 or durations.shape[0] != self.n_states:
+                msg = "Duration matrix must be 2d and have {0} rows.".format(
+                    self._tmat.shape[0]
+                )
+                raise ValueError(msg)
+            return durations
+        else:
+            if len(durations) != self.n_states:
+                raise ValueError("The 'durations' parameters must have "
+                                 "length {}.".format(self.n_states))
 
-        # TODO Normalize transition matrix
-        self._tmat = tmat
-        self._tmat_flat = tmat.flatten()
+            support = np.arange(1, support_cutoff + 1)
+            durations_array = np.empty((self.n_states, support_cutoff))
+            for k, rv in enumerate(durations):
+                durations_array[k] = rv.pmf(support)
+            durations_array /= durations_array.sum(axis=1)[:, np.newaxis]
 
-    @property
-    def emissions(self):
-        return self._emissions
+            return durations_array
 
-    @emissions.setter
-    def emissions(self, value):
-        emissions = np.asarray(value)
+    def _validate_emissions(self, emissions):
+        # For now, just discrete emssions are supported.
+        emissions = np.asarray(emissions)
         if emissions.ndim != 2 or emissions.shape[0] != self.n_states:
             msg = "Emission matrix must be 2d and have {0} rows.".format(
                 self.n_states
             )
             raise ValueError(msg)
-
-        self._emissions = emissions
-
-    @property
-    def durations(self):
-        return self._durations
-
-    @durations.setter
-    def durations(self, value):
-        durations = np.asarray(value)
-        if durations.ndim != 2 or durations.shape[0] != self.n_states:
-            msg = "Duration matrix must be 2d and have {0} rows.".format(
-                self.n_states
-            )
-            raise ValueError(msg)
-
-        self._durations = durations
-        self._durations_flat = durations.flatten()
-
-    @property
-    def startprob(self):
-        return self._startprob
-
-    @startprob.setter
-    def startprob(self, value):
-        startprob = np.asarray(value)
-        if startprob.ndim != 1 or startprob.shape[0] != self.n_states:
-            msg = ("Starting probabilities must be 1d and have {0} "
-                   "elements.").format(self.n_states)
-            raise ValueError(msg)
-        self._startprob = startprob
+        return emissions
 
     def _compute_likelihood(self, obs):
         return self._emissions[:, obs]

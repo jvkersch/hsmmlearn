@@ -3,11 +3,12 @@ from itertools import groupby
 import unittest
 
 import numpy as np
+from scipy.stats import bernoulli, geom
 
-from simple_hsmm.hsmm import DiscreteHSMMModel
+from simple_hsmm.hsmm import HSMMModel
 
 
-class TestDiscreteHSMMModelSampling(unittest.TestCase):
+class TestHSMMModelSampling(unittest.TestCase):
 
     def test_sample_single(self):
         emissions = np.array([
@@ -30,7 +31,7 @@ class TestDiscreteHSMMModelSampling(unittest.TestCase):
         for state in range(n_states):
             startprob = np.zeros(n_states)
             startprob[state] = 1.0
-            hsmm = DiscreteHSMMModel(
+            hsmm = HSMMModel(
                 emissions, durations, tmat, startprob=startprob
             )
             observation, sampled_state = hsmm.sample()
@@ -54,7 +55,7 @@ class TestDiscreteHSMMModelSampling(unittest.TestCase):
             [0.5, 0.0, 0.5],
             [0.5, 0.5, 0.0]
         ])
-        hsmm = DiscreteHSMMModel(emissions, durations, tmat)
+        hsmm = HSMMModel(emissions, durations, tmat)
 
         observations, states = hsmm.sample(100000)
 
@@ -103,7 +104,7 @@ class TestDiscreteHSMMModelSampling(unittest.TestCase):
             [0.0, 0.0, 1.0],
             [1.0, 0.0, 0.0]
         ])
-        hsmm = DiscreteHSMMModel(emissions, durations, tmat)
+        hsmm = HSMMModel(emissions, durations, tmat)
 
         observations, states = hsmm.sample(1000)
 
@@ -115,7 +116,7 @@ class TestDiscreteHSMMModelSampling(unittest.TestCase):
         np.testing.assert_array_equal(unique_states, expected_states)
 
 
-class TestDiscreteHSMMModelDecoding(unittest.TestCase):
+class TestHSMMModelDecoding(unittest.TestCase):
 
     def test_unambiguous_decoding(self):
         emissions = np.array([
@@ -133,21 +134,21 @@ class TestDiscreteHSMMModelDecoding(unittest.TestCase):
             [0.5, 0.0, 0.5],
             [0.5, 0.5, 0.0]
         ])
-        hsmm = DiscreteHSMMModel(emissions, durations, tmat)
+        hsmm = HSMMModel(emissions, durations, tmat)
 
         observations, states = hsmm.sample(1000)
         new_states = hsmm.decode(observations)
         np.testing.assert_array_equal(states, new_states)
 
 
-class TestProperties(unittest.TestCase):
+class TestInitialization(unittest.TestCase):
 
     def test_set_initial_transmat(self):
         emissions = np.zeros((3, 5))
         durations = np.zeros((3, 7))
         tmat = np.eye(3)
 
-        hsmm = DiscreteHSMMModel(emissions, durations, tmat)
+        hsmm = HSMMModel(emissions, durations, tmat)
 
         np.testing.assert_array_equal(hsmm._tmat, tmat)
         np.testing.assert_array_equal(hsmm._tmat_flat, tmat.flatten())
@@ -157,56 +158,38 @@ class TestProperties(unittest.TestCase):
         # Non-square tmat
         tmat = np.ones((3, 4))
         with self.assertRaisesRegexp(ValueError, "shape \(3, 4\)"):
-            hsmm = DiscreteHSMMModel(emissions, durations, tmat)
+            hsmm = HSMMModel(emissions, durations, tmat)
 
         # Non-matrix tmat
         tmat = np.ones((3, 4, 1))
         with self.assertRaisesRegexp(ValueError, "shape \(3, 4, 1\)"):
-            hsmm = DiscreteHSMMModel(emissions, durations, tmat)
-
-    def test_reassign_transmat(self):
-        emissions = np.zeros((3, 5))
-        durations = np.zeros((3, 7))
-        tmat = np.eye(3)
-
-        hsmm = DiscreteHSMMModel(emissions, durations, tmat)
-
-        new_tmat = 2 * tmat
-        hsmm.transmat = new_tmat
-
-        self.assertEqual(hsmm.n_states, 3)
-        np.testing.assert_array_equal(hsmm._tmat, new_tmat)
-        np.testing.assert_array_equal(hsmm._tmat_flat, new_tmat.flatten())
-
-        new_tmat = np.eye(4)
-        with self.assertRaisesRegexp(ValueError, "shape \(4, 4\)"):
-            hsmm.transmat = new_tmat
+            hsmm = HSMMModel(emissions, durations, tmat)
 
     def test_emissions(self):
         emissions = np.arange(3 * 5).reshape(3, 5)
         durations = np.zeros((3, 7))
         tmat = np.eye(3)
 
-        hsmm = DiscreteHSMMModel(emissions, durations, tmat)
+        hsmm = HSMMModel(emissions, durations, tmat)
 
         np.testing.assert_array_equal(hsmm._emissions, emissions)
 
         # Non-matrix tmat
         emissions = emissions.reshape(3, 5, 1)
         with self.assertRaisesRegexp(ValueError, "be 2d"):
-            hsmm = DiscreteHSMMModel(emissions, durations, tmat)
+            hsmm = HSMMModel(emissions, durations, tmat)
 
         # Emissions matrix with too many states
         emissions = np.zeros((4, 4))
         with self.assertRaisesRegexp(ValueError, "3 rows"):
-            hsmm = DiscreteHSMMModel(emissions, durations, tmat)
+            hsmm = HSMMModel(emissions, durations, tmat)
 
     def test_durations(self):
         durations = np.arange(3 * 5).reshape(3, 5)
         emissions = np.zeros((3, 7))
         tmat = np.eye(3)
 
-        hsmm = DiscreteHSMMModel(emissions, durations, tmat)
+        hsmm = HSMMModel(emissions, durations, tmat)
 
         np.testing.assert_array_equal(hsmm._durations, durations)
         np.testing.assert_array_equal(
@@ -216,22 +199,22 @@ class TestProperties(unittest.TestCase):
         # Non-matrix tmat
         durations = durations.reshape(3, 5, 1)
         with self.assertRaisesRegexp(ValueError, "be 2d"):
-            hsmm = DiscreteHSMMModel(emissions, durations, tmat)
+            hsmm = HSMMModel(emissions, durations, tmat)
 
         # Durations matrix with too many states
         durations = np.zeros((4, 4))
         with self.assertRaisesRegexp(ValueError, "3 rows"):
-            hsmm = DiscreteHSMMModel(emissions, durations, tmat)
+            hsmm = HSMMModel(emissions, durations, tmat)
 
     def test_startprob_implicit(self):
         durations = np.arange(3 * 5).reshape(3, 5)
         emissions = np.zeros((3, 7))
         tmat = np.eye(3)
 
-        hsmm = DiscreteHSMMModel(emissions, durations, tmat)
+        hsmm = HSMMModel(emissions, durations, tmat)
 
         np.testing.assert_array_equal(
-            hsmm.startprob, np.full(tmat.shape[0], 1.0 / 3)
+            hsmm._startprob, np.full(tmat.shape[0], 1.0 / 3)
         )
 
     def test_startprob_explicit(self):
@@ -240,16 +223,55 @@ class TestProperties(unittest.TestCase):
         tmat = np.eye(3)
         startprob = np.arange(3)
 
-        hsmm = DiscreteHSMMModel(
+        hsmm = HSMMModel(
             emissions, durations, tmat, startprob=startprob
         )
 
-        np.testing.assert_array_equal(hsmm.startprob, startprob)
+        np.testing.assert_array_equal(hsmm._startprob, startprob)
 
-        startprob = np.arange(4)
-        with self.assertRaisesRegexp(ValueError, "have 3 elements"):
-            hsmm.startprob = startprob
 
-        startprob = np.eye(3)
-        with self.assertRaisesRegexp(ValueError, "be 1d"):
-            hsmm.startprob = startprob
+class TestInitializationWithRVs(unittest.TestCase):
+
+    def test_list_of_rvs(self):
+        emissions = np.zeros((3, 7))
+        tmat = np.eye(3)
+        durations = [
+            bernoulli(0.1, loc=1),
+            bernoulli(0.1, loc=3),
+            bernoulli(0.1, loc=5),
+        ]
+
+        hsmm = HSMMModel(emissions, durations, tmat)
+
+        discrete_durations = np.zeros((3, 100))
+        discrete_durations[(0, 1, 2), (0, 2, 4)] = 0.9
+        discrete_durations[(0, 1, 2), (1, 3, 5)] = 0.1
+
+        np.testing.assert_array_almost_equal(
+            hsmm._durations, discrete_durations
+        )
+
+    def test_list_of_rvs_wrong_length(self):
+        emissions = np.zeros((3, 7))
+        tmat = np.eye(3)
+        durations = []
+
+        with self.assertRaisesRegexp(ValueError, "length 3"):
+            HSMMModel(emissions, durations, tmat)
+
+    def test_normalizations(self):
+        emissions = np.zeros((3, 7))
+        tmat = np.eye(3)
+        durations = [geom(0.3)] * 3
+        support_cutoff = 2
+
+        hsmm = HSMMModel(
+            emissions, durations, tmat, support_cutoff=support_cutoff
+        )
+
+        expected_durations = np.empty((3, 2))
+        expected_durations[:, 0] = 0.58823529
+        expected_durations[:, 1] = 0.41176471
+        np.testing.assert_array_almost_equal(
+            hsmm._durations, expected_durations
+        )
