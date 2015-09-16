@@ -4,6 +4,10 @@ from ._base import _viterbi_impl
 
 
 class DiscreteHSMMModel(object):
+    """ A HSMM model for which both the durations and emissions are
+    discretely distributed.
+
+    """
     def __init__(self, emissions, durations, tmat, startprob=None):
         """
         Parameters
@@ -101,6 +105,11 @@ class DiscreteHSMMModel(object):
         return self._emissions[:, obs]
 
     def decode(self, obs):
+        """
+        Given a series of observations, find the most likely
+        internal states.
+
+        """
         likelihoods = self._compute_likelihood(obs)
 
         n_durations = self._durations.shape[1]
@@ -121,40 +130,45 @@ class DiscreteHSMMModel(object):
         return outputs
 
     def sample(self, n_samples=1):
+        """ Generate a random sample from the HSMM.
+
+        """
         n_states, n_emissions = self._emissions.shape
         n_durations = self._durations.shape[1]
 
         state = np.random.choice(n_states, p=self._startprob)
-        observation = np.random.choice(n_emissions, p=self._emissions[state])
         duration = np.random.choice(n_durations, p=self._durations[state]) + 1
 
         if n_samples == 1:
+            observation = np.random.choice(
+                n_emissions, p=self._emissions[state]
+            )
             return observation, state
-        else:
-            states = np.empty(n_samples, dtype=int)
-            observations = np.empty(n_samples, dtype=int)
 
-            n_generated = 0
-            states[n_generated] = state
-            observations[n_generated] = observation
-            n_generated += 1
-            duration -= 1
+        states = np.empty(n_samples, dtype=int)
+        observations = np.empty(n_samples, dtype=int)
 
-            while True:
-                while duration > 0 and n_generated < n_samples:
-                    observation = np.random.choice(
-                        n_emissions, p=self._emissions[state]
-                    )
-                    states[n_generated] = state
-                    observations[n_generated] = observation
-                    n_generated += 1
-                    duration -= 1
+        # Generate states array.
+        state_idx = 0
+        while state_idx < n_samples:
+            # Adjust for right censoring (the last state may still be going on
+            # when we reach the limit on the number of samples to generate).
+            if state_idx + duration > n_samples:
+                duration = n_samples - state_idx
 
-                if n_generated >= n_samples:
-                    break
+            states[state_idx:state_idx+duration] = state
+            state_idx += duration
 
-                state = np.random.choice(n_states, p=self._tmat[state])
-                duration = np.random.choice(
-                    n_durations, p=self._durations[state]) + 1
+            state = np.random.choice(n_states, p=self._tmat[state])
+            duration = np.random.choice(
+                n_durations, p=self._durations[state]
+            ) + 1
 
-            return observations, states
+        # Generate observations.
+        for state in range(n_states):
+            state_mask = states == state
+            observations[state_mask] = np.random.choice(
+                n_emissions, size=state_mask.sum(), p=self._emissions[state]
+            )
+
+        return observations, states
