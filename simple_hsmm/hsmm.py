@@ -150,10 +150,17 @@ class ContinuousHSMMModel(object):
         self._durations = self._validate_durations(durations, support_cutoff)
         self._durations_flat = self._durations.flatten()
 
-        # XXX validate this
-        self._emission_rv = emission_rv
-        self._emission_loc = emission_loc
-        self._emission_scale = emission_scale
+        # XXX validate this TODO Internal, but should become part of the api:
+        # freeze emission rvs according to locations and scales.
+        
+        #self._emission_rv = emission_rv
+        #self._emission_loc = emission_loc
+        #self._emission_scale = emission_scale
+
+        self._emission_rvs = [
+            emission_rv(loc=loc, scale=scale)
+            for (loc, scale) in zip(emission_loc, emission_scale)
+        ]
 
         if startprob is None:
             startprob = np.full(self.n_states, 1.0 / self.n_states)
@@ -201,9 +208,8 @@ class ContinuousHSMMModel(object):
             Array of per-state likelihoods.
 
         """
-        loc = self._emission_loc[:, np.newaxis]
-        scale = self._emission_scale[:, np.newaxis]
-        return self._emission_rv.pdf(np.squeeze(obs), loc=loc, scale=scale)
+        obs = np.squeeze(obs)
+        return np.vstack([rv.pdf(obs) for rv in self._emission_rvs])
 
     def decode(self, obs):
         """
@@ -241,9 +247,8 @@ class ContinuousHSMMModel(object):
         duration = np.random.choice(n_durations, p=self._durations[state]) + 1
 
         if n_samples == 1:
-            observation = self._emission_rv.rvs(
-                loc=self._emission_loc[state], scale=self._emission_scale[state])
-            return observation, state
+            obs = self._emission_rvs[state].rvs()
+            return obs, state
 
         states = np.empty(n_samples, dtype=int)
         observations = np.empty(n_samples)
@@ -267,10 +272,8 @@ class ContinuousHSMMModel(object):
         # Generate observations.
         for state in range(self.n_states):
             state_mask = states == state
-            observations[state_mask] = self._emission_rv.rvs(
+            observations[state_mask] = self._emission_rvs[state].rvs(
                 size=state_mask.sum(),
-                loc=self._emission_loc[state],
-                scale=self._emission_scale[state]
             )
 
         return observations, states
