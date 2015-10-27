@@ -1,6 +1,7 @@
 import numpy as np
 
 from ._base import _viterbi_impl
+from .utils import NonParametricDistribution
 
 
 class MultinomialHSMMModel(object):
@@ -14,7 +15,13 @@ class MultinomialHSMMModel(object):
         self._tmat_flat = self._tmat.flatten()  # XXX .flat ?
         self._durations = self._validate_durations(durations, support_cutoff)
         self._durations_flat = self._durations.flatten()
-        self._emissions = self._validate_emissions(emissions)
+
+        emissions = self._validate_emissions(emissions)
+        xs = np.arange(emissions.shape[1])
+        self._emission_rvs = [
+            NonParametricDistribution(xs, ps) for ps in emissions
+        ]
+        self._emissions = emissions
 
         if startprob is None:
             startprob = np.full(self.n_states, 1.0 / self.n_states)
@@ -65,7 +72,8 @@ class MultinomialHSMMModel(object):
         return emissions
 
     def _compute_likelihood(self, obs):
-        return self._emissions[:, obs]
+        obs = np.squeeze(obs)
+        return np.vstack([rv.pmf(obs) for rv in self._emission_rvs])
 
     def decode(self, obs):
         """
@@ -90,23 +98,22 @@ class MultinomialHSMMModel(object):
             outputs,
         )
 
+        outputs = outputs.astype(int)
         return outputs
 
     def sample(self, n_samples=1):
         """ Generate a random sample from the HSMM.
 
         """
-        n_states, n_emissions = self._emissions.shape
+        #n_states, n_emissions = self._emissions.shape
         n_durations = self._durations.shape[1]
 
-        state = np.random.choice(n_states, p=self._startprob)
+        state = np.random.choice(self.n_states, p=self._startprob)
         duration = np.random.choice(n_durations, p=self._durations[state]) + 1
 
         if n_samples == 1:
-            observation = np.random.choice(
-                n_emissions, p=self._emissions[state]
-            )
-            return observation, state
+            obs = self._emission_rvs[state].rvs()
+            return obs, state
 
         states = np.empty(n_samples, dtype=int)
         observations = np.empty(n_samples, dtype=int)
@@ -122,16 +129,16 @@ class MultinomialHSMMModel(object):
             states[state_idx:state_idx+duration] = state
             state_idx += duration
 
-            state = np.random.choice(n_states, p=self._tmat[state])
+            state = np.random.choice(self.n_states, p=self._tmat[state])
             duration = np.random.choice(
                 n_durations, p=self._durations[state]
             ) + 1
 
         # Generate observations.
-        for state in range(n_states):
+        for state in range(self.n_states):
             state_mask = states == state
-            observations[state_mask] = np.random.choice(
-                n_emissions, size=state_mask.sum(), p=self._emissions[state]
+            observations[state_mask] = self._emission_rvs[state].rvs(
+                size=state_mask.sum(),
             )
 
         return observations, states
@@ -141,7 +148,7 @@ class ContinuousHSMMModel(object):
     """ A HSMM model with continuous emissions.
     """
     def __init__(
-            self, emission_rv, emission_loc, emission_scale,
+            self, emission_rvs,
             durations, tmat, startprob=None,
             support_cutoff=100):
 
@@ -150,17 +157,7 @@ class ContinuousHSMMModel(object):
         self._durations = self._validate_durations(durations, support_cutoff)
         self._durations_flat = self._durations.flatten()
 
-        # XXX validate this TODO Internal, but should become part of the api:
-        # freeze emission rvs according to locations and scales.
-        
-        #self._emission_rv = emission_rv
-        #self._emission_loc = emission_loc
-        #self._emission_scale = emission_scale
-
-        self._emission_rvs = [
-            emission_rv(loc=loc, scale=scale)
-            for (loc, scale) in zip(emission_loc, emission_scale)
-        ]
+        self._emission_rvs = emission_rvs
 
         if startprob is None:
             startprob = np.full(self.n_states, 1.0 / self.n_states)

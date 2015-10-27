@@ -146,8 +146,8 @@ class TestMultinomialHSMMModelDecoding(unittest.TestCase):
 class TestInitialization(unittest.TestCase):
 
     def test_set_initial_transmat(self):
-        emissions = np.zeros((3, 5))
-        durations = np.zeros((3, 7))
+        emissions = np.ones((3, 5))
+        durations = np.ones((3, 7))
         tmat = np.eye(3)
 
         hsmm = MultinomialHSMMModel(emissions, durations, tmat)
@@ -169,7 +169,7 @@ class TestInitialization(unittest.TestCase):
 
     def test_emissions(self):
         emissions = np.arange(3 * 5).reshape(3, 5)
-        durations = np.zeros((3, 7))
+        durations = np.ones((3, 7))
         tmat = np.eye(3)
 
         hsmm = MultinomialHSMMModel(emissions, durations, tmat)
@@ -188,7 +188,7 @@ class TestInitialization(unittest.TestCase):
 
     def test_durations(self):
         durations = np.arange(3 * 5).reshape(3, 5)
-        emissions = np.zeros((3, 7))
+        emissions = np.ones((3, 7))
         tmat = np.eye(3)
 
         hsmm = MultinomialHSMMModel(emissions, durations, tmat)
@@ -210,7 +210,7 @@ class TestInitialization(unittest.TestCase):
 
     def test_startprob_implicit(self):
         durations = np.arange(3 * 5).reshape(3, 5)
-        emissions = np.zeros((3, 7))
+        emissions = np.ones((3, 7))
         tmat = np.eye(3)
 
         hsmm = MultinomialHSMMModel(emissions, durations, tmat)
@@ -221,7 +221,7 @@ class TestInitialization(unittest.TestCase):
 
     def test_startprob_explicit(self):
         durations = np.arange(3 * 5).reshape(3, 5)
-        emissions = np.zeros((3, 7))
+        emissions = np.ones((3, 7))
         tmat = np.eye(3)
         startprob = np.arange(3)
 
@@ -235,7 +235,7 @@ class TestInitialization(unittest.TestCase):
 class TestInitializationWithRVs(unittest.TestCase):
 
     def test_list_of_rvs(self):
-        emissions = np.zeros((3, 7))
+        emissions = np.ones((3, 7))
         tmat = np.eye(3)
         durations = [
             bernoulli(0.1, loc=1),
@@ -254,7 +254,7 @@ class TestInitializationWithRVs(unittest.TestCase):
         )
 
     def test_list_of_rvs_wrong_length(self):
-        emissions = np.zeros((3, 7))
+        emissions = np.ones((3, 7))
         tmat = np.eye(3)
         durations = []
 
@@ -262,7 +262,7 @@ class TestInitializationWithRVs(unittest.TestCase):
             MultinomialHSMMModel(emissions, durations, tmat)
 
     def test_normalizations(self):
-        emissions = np.zeros((3, 7))
+        emissions = np.ones((3, 7))
         tmat = np.eye(3)
         durations = [geom(0.3)] * 3
         support_cutoff = 2
@@ -279,12 +279,20 @@ class TestInitializationWithRVs(unittest.TestCase):
         )
 
 
+def _make_emission_rvs(rv, means, scales):
+    return [
+        rv(loc=loc, scale=scale)
+        for (loc, scale) in zip(means, scales)
+    ]
+
+
 class TestGaussianHSMMModelSampling(unittest.TestCase):
 
     def test_sample_single(self):
         emission_rv = norm
         means = np.array([0.0, 5.0, 10.0])
         scales = 1e-12 * np.ones(3)
+        emission_rvs = _make_emission_rvs(emission_rv, means, scales)
 
         durations = np.array([
             [0.5, 0.0, 0.0, 0.5],
@@ -302,7 +310,7 @@ class TestGaussianHSMMModelSampling(unittest.TestCase):
             startprob = np.zeros(n_states)
             startprob[state] = 1.0
             hsmm = ContinuousHSMMModel(
-                emission_rv, means, scales, durations,
+                emission_rvs, durations,
                 tmat, startprob=startprob
             )
             observation, sampled_state = hsmm.sample()
@@ -314,6 +322,7 @@ class TestGaussianHSMMModelSampling(unittest.TestCase):
         emission_rv = norm
         means = np.array([0.0, 5.0, 10.0])
         scales = np.array([0.1, 0.2, 0.3])
+        emission_rvs = _make_emission_rvs(emission_rv, means, scales)
 
         durations = np.array([
             [0.5, 0.0, 0.0, 0.5],
@@ -326,7 +335,7 @@ class TestGaussianHSMMModelSampling(unittest.TestCase):
             [0.5, 0.5, 0.0]
         ])
         hsmm = ContinuousHSMMModel(
-            emission_rv, means, scales, durations, tmat
+            emission_rvs, durations, tmat
         )
 
         observations, states = hsmm.sample(100000)
@@ -361,6 +370,7 @@ class TestGaussianHSMMModelSampling(unittest.TestCase):
         emission_rv = norm
         means = np.array([0.0, 5.0, 10.0])
         scales = np.array([0.1, 0.2, 0.3])
+        emission_rvs = _make_emission_rvs(emission_rv, means, scales)
 
         durations = np.array([
             [0.5, 0.0, 0.0, 0.5],
@@ -372,7 +382,7 @@ class TestGaussianHSMMModelSampling(unittest.TestCase):
             [0.0, 0.0, 1.0],
             [1.0, 0.0, 0.0]
         ])
-        hsmm = ContinuousHSMMModel(emission_rv, means, scales, durations, tmat)
+        hsmm = ContinuousHSMMModel(emission_rvs, durations, tmat)
 
         observations, states = hsmm.sample(1000)
 
@@ -390,6 +400,7 @@ class TestGaussianHSMMModelDecoding(unittest.TestCase):
         emission_rv = norm
         means = np.array([0.0, 5.0, 10.0])
         scales = np.array([1.0, 1.0, 1.0])
+        emission_rvs = _make_emission_rvs(emission_rv, means, scales)
 
         durations = np.array([
             [0.1, 0.0, 0.0, 0.9],
@@ -401,7 +412,7 @@ class TestGaussianHSMMModelDecoding(unittest.TestCase):
             [0.5, 0.0, 0.5],
             [0.5, 0.5, 0.0]
         ])
-        hsmm = ContinuousHSMMModel(emission_rv, means, scales, durations, tmat)
+        hsmm = ContinuousHSMMModel(emission_rvs, durations, tmat)
 
         observations, states = hsmm.sample(1000)
         new_states = hsmm.decode(observations)
