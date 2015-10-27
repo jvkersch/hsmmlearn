@@ -172,19 +172,17 @@ class TestInitialization(unittest.TestCase):
         durations = np.ones((3, 7))
         tmat = np.eye(3)
 
-        hsmm = MultinomialHSMMModel(emissions, durations, tmat)
-
-        np.testing.assert_array_equal(hsmm._emissions, emissions)
+        MultinomialHSMMModel(emissions, durations, tmat)
 
         # Non-matrix tmat
         emissions = emissions.reshape(3, 5, 1)
         with self.assertRaisesRegexp(ValueError, "be 2d"):
-            hsmm = MultinomialHSMMModel(emissions, durations, tmat)
+            MultinomialHSMMModel(emissions, durations, tmat)
 
         # Emissions matrix with too many states
         emissions = np.zeros((4, 4))
         with self.assertRaisesRegexp(ValueError, "3 rows"):
-            hsmm = MultinomialHSMMModel(emissions, durations, tmat)
+            MultinomialHSMMModel(emissions, durations, tmat)
 
     def test_durations(self):
         durations = np.arange(3 * 5).reshape(3, 5)
