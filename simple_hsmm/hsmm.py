@@ -23,6 +23,21 @@ class BaseHSMMModel(object):
     def n_durations(self):
         return self._durations.shape[1]
 
+    def __init__(
+            self, emissions, durations, tmat, startprob=None,
+            support_cutoff=100):
+
+        self.tmat = tmat
+
+        self.support_cutoff = support_cutoff
+        self.durations = durations
+
+        self.emissions = emissions
+
+        if startprob is None:
+            startprob = np.full(self.n_states, 1.0 / self.n_states)
+        self._startprob = startprob
+
     def decode(self, obs):
         """
         Given a series of observations, find the most likely
@@ -92,21 +107,6 @@ class MultinomialHSMMModel(BaseHSMMModel):
     """
     emissions = DiscreteEmissions()
 
-    def __init__(
-            self, emissions, durations, tmat, startprob=None,
-            support_cutoff=100):
-
-        self.tmat = tmat
-
-        self.support_cutoff = support_cutoff
-        self.durations = durations
-
-        self.emissions = emissions
-
-        if startprob is None:
-            startprob = np.full(self.n_states, 1.0 / self.n_states)
-        self._startprob = startprob
-
     def decode(self, obs):
         states = super(MultinomialHSMMModel, self).decode(obs)
         return states.astype(int)
@@ -127,21 +127,6 @@ class ContinuousHSMMModel(BaseHSMMModel):
     """ A HSMM model with continuous emissions.
     """
     emissions = ContinuousEmissions()
-
-    def __init__(
-            self, emission_rvs,
-            durations, tmat, startprob=None,
-            support_cutoff=100):
-
-        self.tmat = tmat
-
-        self.support_cutoff = support_cutoff
-        self.durations = durations
-        self.emissions = emission_rvs
-
-        if startprob is None:
-            startprob = np.full(self.n_states, 1.0 / self.n_states)
-        self._startprob = startprob
 
     def _compute_likelihood(self, obs):
         """
