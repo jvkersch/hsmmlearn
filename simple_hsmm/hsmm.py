@@ -1,10 +1,19 @@
 import numpy as np
 
 from ._base import _viterbi_impl
-from .utils import NonParametricDistribution
+from .properties import (
+    AbstractEmissions, ContinuousEmissions, DiscreteEmissions,
+    Duration, TransitionMatrix
+)
 
 
 class BaseHSMMModel(object):
+
+    emssions = AbstractEmissions()
+
+    tmat = TransitionMatrix()
+
+    durations = Duration()
 
     def decode(self, obs):
         """
@@ -76,54 +85,22 @@ class BaseHSMMModel(object):
     def n_states(self):
         return self._tmat.shape[0]
 
-    def _validate_tmat(self, tmat):
-        tmat = np.asarray(tmat)
-        if tmat.ndim != 2 or tmat.shape[0] != tmat.shape[1]:
-            raise ValueError("Transition matrix must be square, "
-                             "but a matrix of shape {0} was received.".format(
-                                 tmat.shape))
-        return tmat
-
-    def _validate_durations(self, durations, support_cutoff):
-        if isinstance(durations, np.ndarray):
-            durations = np.asarray(durations)
-            if durations.ndim != 2 or durations.shape[0] != self.n_states:
-                msg = "Duration matrix must be 2d and have {0} rows.".format(
-                    self._tmat.shape[0]
-                )
-                raise ValueError(msg)
-            return durations
-        else:
-            if len(durations) != self.n_states:
-                raise ValueError("The 'durations' parameters must have "
-                                 "length {}.".format(self.n_states))
-
-            support = np.arange(1, support_cutoff + 1)
-            durations_array = np.empty((self.n_states, support_cutoff))
-            for k, rv in enumerate(durations):
-                durations_array[k] = rv.pmf(support)
-            durations_array /= durations_array.sum(axis=1)[:, np.newaxis]
-
-            return durations_array
-
 
 class MultinomialHSMMModel(BaseHSMMModel):
     """ A HSMM model with discrete emissions.
     """
+    emissions = DiscreteEmissions()
+
     def __init__(
             self, emissions, durations, tmat, startprob=None,
             support_cutoff=100):
 
-        self._tmat = self._validate_tmat(tmat)
-        self._tmat_flat = self._tmat.flatten()  # XXX .flat ?
-        self._durations = self._validate_durations(durations, support_cutoff)
-        self._durations_flat = self._durations.flatten()
+        self.tmat = tmat
 
-        emissions = self._validate_emissions(emissions)
-        xs = np.arange(emissions.shape[1])
-        self._emission_rvs = [
-            NonParametricDistribution(xs, ps) for ps in emissions
-        ]
+        self.support_cutoff = support_cutoff
+        self.durations = durations
+
+        self.emissions = emissions
 
         if startprob is None:
             startprob = np.full(self.n_states, 1.0 / self.n_states)
@@ -140,16 +117,6 @@ class MultinomialHSMMModel(BaseHSMMModel):
         else:
             return obs.astype(int), states.astype(int)
 
-    def _validate_emissions(self, emissions):
-        # For now, just discrete emssions are supported.
-        emissions = np.asarray(emissions)
-        if emissions.ndim != 2 or emissions.shape[0] != self.n_states:
-            msg = "Emission matrix must be 2d and have {0} rows.".format(
-                self.n_states
-            )
-            raise ValueError(msg)
-        return emissions
-
     def _compute_likelihood(self, obs):
         obs = np.squeeze(obs)
         return np.vstack([rv.pmf(obs) for rv in self._emission_rvs])
@@ -158,17 +125,18 @@ class MultinomialHSMMModel(BaseHSMMModel):
 class ContinuousHSMMModel(BaseHSMMModel):
     """ A HSMM model with continuous emissions.
     """
+    emissions = ContinuousEmissions()
+
     def __init__(
             self, emission_rvs,
             durations, tmat, startprob=None,
             support_cutoff=100):
 
-        self._tmat = self._validate_tmat(tmat)
-        self._tmat_flat = self._tmat.flatten()  # XXX .flat ?
-        self._durations = self._validate_durations(durations, support_cutoff)
-        self._durations_flat = self._durations.flatten()
+        self.tmat = tmat
 
-        self._emission_rvs = emission_rvs
+        self.support_cutoff = support_cutoff
+        self.durations = durations
+        self.emissions = emission_rvs
 
         if startprob is None:
             startprob = np.full(self.n_states, 1.0 / self.n_states)
