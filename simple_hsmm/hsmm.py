@@ -15,6 +15,14 @@ class BaseHSMMModel(object):
 
     durations = Duration()
 
+    @property
+    def n_states(self):
+        return self._tmat.shape[0]
+
+    @property
+    def n_durations(self):
+        return self._durations.shape[1]
+
     def decode(self, obs):
         """
         Given a series of observations, find the most likely
@@ -23,14 +31,12 @@ class BaseHSMMModel(object):
         """
         likelihoods = self._compute_likelihood(obs)
 
-        n_durations = self._durations.shape[1]
-        n_states, n_obs = likelihoods.shape
-
+        n_obs = len(obs)
         outputs = np.empty(n_obs, dtype=np.int32)
         _viterbi_impl(
             n_obs,
-            n_states,
-            n_durations,
+            self.n_states,
+            self.n_durations,
             self._durations_flat,
             self._tmat_flat,
             self._startprob,
@@ -44,10 +50,9 @@ class BaseHSMMModel(object):
         """ Generate a random sample from the HSMM.
 
         """
-        n_durations = self._durations.shape[1]
-
         state = np.random.choice(self.n_states, p=self._startprob)
-        duration = np.random.choice(n_durations, p=self._durations[state]) + 1
+        duration = np.random.choice(
+            self.n_durations, p=self._durations[state]) + 1
 
         if n_samples == 1:
             obs = self._emission_rvs[state].rvs()
@@ -69,7 +74,7 @@ class BaseHSMMModel(object):
 
             state = np.random.choice(self.n_states, p=self._tmat[state])
             duration = np.random.choice(
-                n_durations, p=self._durations[state]
+                self.n_durations, p=self._durations[state]
             ) + 1
 
         # Generate observations.
@@ -80,10 +85,6 @@ class BaseHSMMModel(object):
             )
 
         return observations, states
-
-    @property
-    def n_states(self):
-        return self._tmat.shape[0]
 
 
 class MultinomialHSMMModel(BaseHSMMModel):
