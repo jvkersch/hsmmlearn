@@ -6,11 +6,11 @@ import numpy as np
 from scipy.stats import bernoulli, geom, norm
 
 from simple_hsmm.hsmm import (
-    ContinuousHSMMModel, MultinomialHSMMModel
+    ContinuousHSMMModel, DiscreteHSMMModel
 )
 
 
-class TestMultinomialHSMMModelSampling(unittest.TestCase):
+class TestDiscreteHSMMModelSampling(unittest.TestCase):
 
     def test_sample_single(self):
         emissions = np.array([
@@ -33,7 +33,7 @@ class TestMultinomialHSMMModelSampling(unittest.TestCase):
         for state in range(n_states):
             startprob = np.zeros(n_states)
             startprob[state] = 1.0
-            hsmm = MultinomialHSMMModel(
+            hsmm = DiscreteHSMMModel(
                 emissions, durations, tmat, startprob=startprob
             )
             observation, sampled_state = hsmm.sample()
@@ -57,7 +57,7 @@ class TestMultinomialHSMMModelSampling(unittest.TestCase):
             [0.5, 0.0, 0.5],
             [0.5, 0.5, 0.0]
         ])
-        hsmm = MultinomialHSMMModel(emissions, durations, tmat)
+        hsmm = DiscreteHSMMModel(emissions, durations, tmat)
 
         observations, states = hsmm.sample(100000)
 
@@ -106,7 +106,7 @@ class TestMultinomialHSMMModelSampling(unittest.TestCase):
             [0.0, 0.0, 1.0],
             [1.0, 0.0, 0.0]
         ])
-        hsmm = MultinomialHSMMModel(emissions, durations, tmat)
+        hsmm = DiscreteHSMMModel(emissions, durations, tmat)
 
         observations, states = hsmm.sample(1000)
 
@@ -118,7 +118,7 @@ class TestMultinomialHSMMModelSampling(unittest.TestCase):
         np.testing.assert_array_equal(unique_states, expected_states)
 
 
-class TestMultinomialHSMMModelDecoding(unittest.TestCase):
+class TestDiscreteHSMMModelDecoding(unittest.TestCase):
 
     def test_unambiguous_decoding(self):
         emissions = np.array([
@@ -136,7 +136,7 @@ class TestMultinomialHSMMModelDecoding(unittest.TestCase):
             [0.5, 0.0, 0.5],
             [0.5, 0.5, 0.0]
         ])
-        hsmm = MultinomialHSMMModel(emissions, durations, tmat)
+        hsmm = DiscreteHSMMModel(emissions, durations, tmat)
 
         observations, states = hsmm.sample(1000)
         new_states = hsmm.decode(observations)
@@ -150,7 +150,7 @@ class TestInitialization(unittest.TestCase):
         durations = np.ones((3, 7))
         tmat = np.eye(3)
 
-        hsmm = MultinomialHSMMModel(emissions, durations, tmat)
+        hsmm = DiscreteHSMMModel(emissions, durations, tmat)
 
         np.testing.assert_array_equal(hsmm._tmat, tmat)
         np.testing.assert_array_equal(hsmm._tmat_flat, tmat.flatten())
@@ -160,36 +160,36 @@ class TestInitialization(unittest.TestCase):
         # Non-square tmat
         tmat = np.ones((3, 4))
         with self.assertRaisesRegexp(ValueError, "shape \(3, 4\)"):
-            hsmm = MultinomialHSMMModel(emissions, durations, tmat)
+            hsmm = DiscreteHSMMModel(emissions, durations, tmat)
 
         # Non-matrix tmat
         tmat = np.ones((3, 4, 1))
         with self.assertRaisesRegexp(ValueError, "shape \(3, 4, 1\)"):
-            hsmm = MultinomialHSMMModel(emissions, durations, tmat)
+            hsmm = DiscreteHSMMModel(emissions, durations, tmat)
 
     def test_emissions(self):
         emissions = np.arange(3 * 5).reshape(3, 5)
         durations = np.ones((3, 7))
         tmat = np.eye(3)
 
-        MultinomialHSMMModel(emissions, durations, tmat)
+        DiscreteHSMMModel(emissions, durations, tmat)
 
         # Non-matrix tmat
         emissions = emissions.reshape(3, 5, 1)
         with self.assertRaisesRegexp(ValueError, "be 2d"):
-            MultinomialHSMMModel(emissions, durations, tmat)
+            DiscreteHSMMModel(emissions, durations, tmat)
 
         # Emissions matrix with too many states
         emissions = np.zeros((4, 4))
         with self.assertRaisesRegexp(ValueError, "3 rows"):
-            MultinomialHSMMModel(emissions, durations, tmat)
+            DiscreteHSMMModel(emissions, durations, tmat)
 
     def test_durations(self):
         durations = np.arange(3 * 5).reshape(3, 5)
         emissions = np.ones((3, 7))
         tmat = np.eye(3)
 
-        hsmm = MultinomialHSMMModel(emissions, durations, tmat)
+        hsmm = DiscreteHSMMModel(emissions, durations, tmat)
 
         np.testing.assert_array_equal(hsmm._durations, durations)
         np.testing.assert_array_equal(
@@ -199,19 +199,19 @@ class TestInitialization(unittest.TestCase):
         # Non-matrix tmat
         durations = durations.reshape(3, 5, 1)
         with self.assertRaisesRegexp(ValueError, "be 2d"):
-            hsmm = MultinomialHSMMModel(emissions, durations, tmat)
+            hsmm = DiscreteHSMMModel(emissions, durations, tmat)
 
         # Durations matrix with too many states
         durations = np.zeros((4, 4))
         with self.assertRaisesRegexp(ValueError, "3 rows"):
-            hsmm = MultinomialHSMMModel(emissions, durations, tmat)
+            hsmm = DiscreteHSMMModel(emissions, durations, tmat)
 
     def test_startprob_implicit(self):
         durations = np.arange(3 * 5).reshape(3, 5)
         emissions = np.ones((3, 7))
         tmat = np.eye(3)
 
-        hsmm = MultinomialHSMMModel(emissions, durations, tmat)
+        hsmm = DiscreteHSMMModel(emissions, durations, tmat)
 
         np.testing.assert_array_equal(
             hsmm._startprob, np.full(tmat.shape[0], 1.0 / 3)
@@ -223,7 +223,7 @@ class TestInitialization(unittest.TestCase):
         tmat = np.eye(3)
         startprob = np.arange(3)
 
-        hsmm = MultinomialHSMMModel(
+        hsmm = DiscreteHSMMModel(
             emissions, durations, tmat, startprob=startprob
         )
 
@@ -241,7 +241,7 @@ class TestInitializationWithRVs(unittest.TestCase):
             bernoulli(0.1, loc=5),
         ]
 
-        hsmm = MultinomialHSMMModel(emissions, durations, tmat)
+        hsmm = DiscreteHSMMModel(emissions, durations, tmat)
 
         discrete_durations = np.zeros((3, 100))
         discrete_durations[(0, 1, 2), (0, 2, 4)] = 0.9
@@ -257,7 +257,7 @@ class TestInitializationWithRVs(unittest.TestCase):
         durations = []
 
         with self.assertRaisesRegexp(ValueError, "length 3"):
-            MultinomialHSMMModel(emissions, durations, tmat)
+            DiscreteHSMMModel(emissions, durations, tmat)
 
     def test_normalizations(self):
         emissions = np.ones((3, 7))
@@ -265,7 +265,7 @@ class TestInitializationWithRVs(unittest.TestCase):
         durations = [geom(0.3)] * 3
         support_cutoff = 2
 
-        hsmm = MultinomialHSMMModel(
+        hsmm = DiscreteHSMMModel(
             emissions, durations, tmat, support_cutoff=support_cutoff
         )
 

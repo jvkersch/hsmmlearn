@@ -1,4 +1,4 @@
-#cython: boundscheck=False
+#cython: boundscheck=False, embedsignature=True
 
 cdef extern from "../_hsmm/src/ViterbiImpl.h":
     void ViterbiImpl(int tauPara, int JPara, int MPara,

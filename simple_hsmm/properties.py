@@ -79,6 +79,20 @@ class ContinuousEmissions(AbstractEmissions):
         obj._emission_rvs = emission_rvs
 
 
+class GaussianEmissions(ContinuousEmissions):
+
+    def __get__(self, obj, type=None):
+
+        return obj._emission_rvs
+
+    def __set__(self, obj, value):
+        from scipy.stats import norm
+        obj._means = value[0]
+        obj._scales = value[1]
+        obj._emission_rvs = [norm(loc=loc, scale=scale)
+                             for (loc, scale) in zip(obj._means, obj._scales)]
+
+
 class DiscreteEmissions(AbstractEmissions):
 
     def __get__(self, obj, type=None):
