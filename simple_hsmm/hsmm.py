@@ -106,6 +106,8 @@ class HSMMModel(object):
         """Fit HSMM parameters (in place), given a sequence of observations.
 
         """
+        obs = np.atleast_1d(obs)
+
         censoring = int(censoring)
         tau = len(obs)
         j = self.n_states
