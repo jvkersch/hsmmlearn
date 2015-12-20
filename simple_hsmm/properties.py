@@ -1,11 +1,9 @@
 import numpy as np
 
-from .utils import NonParametricDistribution
+from .emissions import AbstractEmissions
 
 
-# XXX Should descriptors raise AttributeError instead?
-
-class Duration(object):
+class Durations(object):
 
     def __get__(self, obj, type=None):
         return obj._durations
@@ -34,6 +32,21 @@ class Duration(object):
         obj._durations_flat = durations_arr.flatten()
 
 
+class Emissions(object):
+    def __get__(self, obj, type=None):
+        return obj._emissions
+
+    def __set__(self, obj, emissions):
+        if not isinstance(emissions, AbstractEmissions):
+            raise TypeError(
+                "Emissions parameter must be an instance of "
+                "AbstractEmissions, but received an instance of {!r} "
+                "instead.".format(type(emissions))
+            )
+        # XXX should check that emissions match with number of states.
+        obj._emissions = emissions
+
+
 class TransitionMatrix(object):
 
     def __get__(self, obj, type=None):
@@ -58,96 +71,3 @@ class TransitionMatrix(object):
                              "but a matrix of shape {0} was received.".format(
                                  tmat.shape))
         return tmat
-
-
-class AbstractEmissions(object):
-
-    def __get__(self, obj, type=None):
-        raise AttributeError("This property should not be used directly.")
-
-    def __set__(self, obj, value):
-        raise AttributeError("This property should not be used directly.")
-
-
-class ContinuousEmissions(AbstractEmissions):
-
-    def __get__(self, obj, type=None):
-        return obj._emission_rvs
-
-    def __set__(self, obj, emission_rvs):
-        # TODO Validation not yet implemented.
-        obj._emission_rvs = emission_rvs
-
-
-class GaussianEmissions(ContinuousEmissions):
-
-    def __get__(self, obj, type=None):
-
-        return obj._emission_rvs
-
-    def __set__(self, obj, value):
-        from scipy.stats import norm
-        obj._means = value[0]
-        obj._scales = value[1]
-        obj._emission_rvs = [norm(loc=loc, scale=scale)
-                             for (loc, scale) in zip(obj._means, obj._scales)]
-
-    @classmethod
-    def re_estimate(cls, old_emissions, ggamma, observations):
-        """ Re-estimate the parameters of this distribution, given a set of
-        smoothed probabilities.
-
-        In Guedon's paper, these quantities are called L_j(t).
-
-        Parameters
-        ----------
-        gamma : array, shape=(n_states, n_observations)
-        observations : array, shape=(n_observations, )
-
-        """
-        p = np.sum(gamma * observations[np.newaxis, :], axis=1)
-        q = np.sum(gamma, axis=1)
-        new_means = p / q
-
-        A = observations[np.newaxis, :] - new_means[:, np.newaxis]
-        p = np.sum(gamma * A**2, axis=1)
-        variances = p / q
-        new_scales = np.sqrt(variances)
-
-        return new_means, new_scales
-
-
-class DiscreteEmissions(AbstractEmissions):
-
-    def __get__(self, obj, type=None):
-        return obj._emissions
-
-    def __set__(self, obj, emissions):
-        emissions = np.asarray(emissions)
-        if emissions.ndim != 2 or emissions.shape[0] != obj.n_states:
-            msg = "Emission matrix must be 2d and have {0} rows.".format(
-                obj.n_states
-            )
-            raise ValueError(msg)
-
-        xs = np.arange(emissions.shape[1])
-        _emission_rvs = [
-            NonParametricDistribution(xs, ps) for ps in emissions
-        ]
-
-        obj._emissions = emissions
-        obj._emission_rvs = _emission_rvs
-
-    @classmethod
-    def re_estimate(cls, old_emissions, gamma, observations):
-        """
-        gamma : array, shape=(n_states, n_observations)
-        observations : array, shape=(n_observations, )
-        """
-        new_emissions = np.empty_like(old_emissions)
-        for em in range(old_emissions.shape[1]):
-            mask = observations == em
-            new_emissions[:, em] = (
-                gamma[:, mask].sum(axis=1) / gamma.sum(axis=1)
-            )
-        return new_emissions
