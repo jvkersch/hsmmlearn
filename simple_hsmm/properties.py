@@ -92,6 +92,30 @@ class GaussianEmissions(ContinuousEmissions):
         obj._emission_rvs = [norm(loc=loc, scale=scale)
                              for (loc, scale) in zip(obj._means, obj._scales)]
 
+    @classmethod
+    def re_estimate(cls, old_emissions, ggamma, observations):
+        """ Re-estimate the parameters of this distribution, given a set of
+        smoothed probabilities.
+
+        In Guedon's paper, these quantities are called L_j(t).
+
+        Parameters
+        ----------
+        gamma : array, shape=(n_states, n_observations)
+        observations : array, shape=(n_observations, )
+
+        """
+        p = np.sum(gamma * observations[np.newaxis, :], axis=1)
+        q = np.sum(gamma, axis=1)
+        new_means = p / q
+
+        A = observations[np.newaxis, :] - new_means[:, np.newaxis]
+        p = np.sum(gamma * A**2, axis=1)
+        variances = p / q
+        new_scales = np.sqrt(variances)
+
+        return new_means, new_scales
+
 
 class DiscreteEmissions(AbstractEmissions):
 
@@ -113,3 +137,17 @@ class DiscreteEmissions(AbstractEmissions):
 
         obj._emissions = emissions
         obj._emission_rvs = _emission_rvs
+
+    @classmethod
+    def re_estimate(cls, old_emissions, gamma, observations):
+        """
+        gamma : array, shape=(n_states, n_observations)
+        observations : array, shape=(n_observations, )
+        """
+        new_emissions = np.empty_like(old_emissions)
+        for em in range(old_emissions.shape[1]):
+            mask = observations == em
+            new_emissions[:, em] = (
+                gamma[:, mask].sum(axis=1) / gamma.sum(axis=1)
+            )
+        return new_emissions

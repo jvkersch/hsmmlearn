@@ -105,6 +105,10 @@ class BaseHSMMModel(object):
 
         return observations, states
 
+    def _get_reestimator(self):
+        cls = type(self).__dict__['emissions'].__class__
+        return cls.re_estimate
+
 
 class DiscreteHSMMModel(BaseHSMMModel):
     """ A HSMM model with discrete emissions.
@@ -204,10 +208,8 @@ class DiscreteHSMMModel(BaseHSMMModel):
             new_durations = eta / denominator[:, np.newaxis]
 
             # Re-estimate discrete emissions
-            new_emissions = np.empty_like(self._emissions)
-            for em in range(self._emissions.shape[1]):
-                mask = obs == em
-                new_emissions[:, em] = l[:, mask].sum(axis=1) / l.sum(axis=1)
+            re_estimate = self._get_reestimator()
+            new_emissions = re_estimate(self.emissions, l, obs)
 
             # Reassign!
             self.tmat = new_tmat
@@ -342,7 +344,8 @@ class GaussianHSMMModel(ContinuousHSMMModel):
             new_durations = eta / denominator[:, np.newaxis]
 
             # Re-estimate discrete emissions
-            new_means, new_scales = re_estimate_gauss(l, obs)
+            re_estimate = self._get_reestimator()
+            new_means, new_scales = re_estimate(self.emissions, l, obs)
 
             # Reassign!
             self.tmat = new_tmat
@@ -362,27 +365,3 @@ class GaussianHSMMModel(ContinuousHSMMModel):
                 "Log-likelihood procession: {}.".format(step, log_likelihoods))
 
         return has_converged, llh
-
-
-def re_estimate_gauss(gamma, observations):
-    """ Re-estimate the parameters of this distribution, given a set of
-    smoothed probabilities.
-
-    In Guedon's paper, these quantities are called L_j(t).
-
-    Parameters
-    ----------
-    gamma : array, shape=(n_states, n_observations)
-    observations : array, shape=(n_observations, )
-
-    """
-    p = np.sum(gamma * observations[np.newaxis, :], axis=1)
-    q = np.sum(gamma, axis=1)
-    new_means = p / q
-
-    A = observations[np.newaxis, :] - new_means[:, np.newaxis]
-    p = np.sum(gamma * A**2, axis=1)
-    variances = p / q
-    new_scales = np.sqrt(variances)
-
-    return new_means, new_scales
