@@ -2,6 +2,7 @@ from collections import Counter
 from itertools import groupby
 import unittest
 
+import six
 import numpy as np
 from scipy.stats import bernoulli, geom
 
@@ -162,12 +163,12 @@ class TestInitialization(unittest.TestCase):
 
         # Non-square tmat
         tmat = np.ones((3, 4))
-        with self.assertRaisesRegex(ValueError, "shape \(3, 4\)"):
+        with six.assertRaisesRegex(self, ValueError, "shape \(3, 4\)"):
             hsmm = HSMMModel(MultinomialEmissions(emissions), durations, tmat)
 
         # Non-matrix tmat
         tmat = np.ones((3, 4, 1))
-        with self.assertRaisesRegex(ValueError, "shape \(3, 4, 1\)"):
+        with six.assertRaisesRegex(self, ValueError, "shape \(3, 4, 1\)"):
             hsmm = HSMMModel(MultinomialEmissions(emissions), durations, tmat)
 
     # def test_emissions(self):
@@ -201,12 +202,12 @@ class TestInitialization(unittest.TestCase):
 
         # Non-matrix tmat
         durations = durations.reshape(3, 5, 1)
-        with self.assertRaisesRegex(ValueError, "be 2d"):
+        with six.assertRaisesRegex(self, ValueError, "be 2d"):
             hsmm = HSMMModel(MultinomialEmissions(emissions), durations, tmat)
 
         # Durations matrix with too many states
         durations = np.zeros((4, 4))
-        with self.assertRaisesRegex(ValueError, "3 rows"):
+        with six.assertRaisesRegex(self, ValueError, "3 rows"):
             hsmm = HSMMModel(MultinomialEmissions(emissions), durations, tmat)
 
     def test_startprob_implicit(self):
@@ -260,7 +261,7 @@ class TestInitializationWithRVs(unittest.TestCase):
         tmat = np.eye(3)
         durations = []
 
-        with self.assertRaisesRegex(ValueError, "length 3"):
+        with six.assertRaisesRegex(self, ValueError, "length 3"):
             HSMMModel(MultinomialEmissions(emissions), durations, tmat)
 
     def test_normalizations(self):
