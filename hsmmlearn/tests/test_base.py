@@ -4,7 +4,7 @@ import unittest
 
 from scipy.stats import norm
 import numpy as np
-from simple_hsmm.base import _viterbi_impl
+from hsmmlearn.base import _viterbi_impl
 
 
 def load_data(fname):

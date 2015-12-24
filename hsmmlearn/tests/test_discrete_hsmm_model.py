@@ -5,8 +5,8 @@ import unittest
 import numpy as np
 from scipy.stats import bernoulli, geom
 
-from simple_hsmm.hsmm import HSMMModel
-from simple_hsmm.emissions import GaussianEmissions, MultinomialEmissions
+from hsmmlearn.hsmm import HSMMModel
+from hsmmlearn.emissions import GaussianEmissions, MultinomialEmissions
 
 
 class TestHSMMModelSampling(unittest.TestCase):
