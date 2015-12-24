@@ -1,6 +1,6 @@
 import numpy as np
 
-from ._base import _viterbi_impl, _fb_impl
+from .base import _viterbi_impl, _fb_impl
 from .properties import Durations, Emissions, TransitionMatrix
 
 

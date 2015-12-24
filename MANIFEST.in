@@ -1,0 +1,2 @@
+include README.md
+recursive-include simple_hsmm *.cpp *.h

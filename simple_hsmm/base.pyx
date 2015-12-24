@@ -1,11 +1,11 @@
 #cython: boundscheck=False, embedsignature=True
 
-cdef extern from "../_hsmm/src/ViterbiImpl.h":
+cdef extern from "_hsmm/src/ViterbiImpl.h":
     void ViterbiImpl(int tauPara, int JPara, int MPara,
                      double dPara[], double pPara[], double piPara[],
                      double pdfPara[], int hiddenStatesPara[]) nogil
 
-cdef extern from "../_hsmm/src/FBImpl.h":
+cdef extern from "_hsmm/src/FBImpl.h":
     void FBImpl(int CensoringPara, int tauPara, int JPara,
                 int MPara, double dPara[], double pPara[], double piPara[],
                 double pdfPara[],
