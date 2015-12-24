@@ -83,7 +83,7 @@ class TestHSMMModelSampling(unittest.TestCase):
             counts = Counter(
                 count for s, count in states_with_durations if s == state
             )
-            num_counts = sum(counts.viewvalues())
+            num_counts = sum(counts.values())
             for duration in range(n_durations):
                 np.testing.assert_almost_equal(
                     counts[duration + 1] / float(num_counts),
@@ -114,7 +114,7 @@ class TestHSMMModelSampling(unittest.TestCase):
 
         # Check that we observe the right state transitions: 0 -> 1 -> 2 -> 0
         unique_states = np.array([s for s, _ in groupby(states)])
-        expected_states = np.array(range(3) * len(states))
+        expected_states = np.array(list(range(3)) * len(states))
         expected_states = expected_states[unique_states[0]:]
         expected_states = expected_states[:len(unique_states)]
         np.testing.assert_array_equal(unique_states, expected_states)
@@ -162,12 +162,12 @@ class TestInitialization(unittest.TestCase):
 
         # Non-square tmat
         tmat = np.ones((3, 4))
-        with self.assertRaisesRegexp(ValueError, "shape \(3, 4\)"):
+        with self.assertRaisesRegex(ValueError, "shape \(3, 4\)"):
             hsmm = HSMMModel(MultinomialEmissions(emissions), durations, tmat)
 
         # Non-matrix tmat
         tmat = np.ones((3, 4, 1))
-        with self.assertRaisesRegexp(ValueError, "shape \(3, 4, 1\)"):
+        with self.assertRaisesRegex(ValueError, "shape \(3, 4, 1\)"):
             hsmm = HSMMModel(MultinomialEmissions(emissions), durations, tmat)
 
     # def test_emissions(self):
@@ -201,12 +201,12 @@ class TestInitialization(unittest.TestCase):
 
         # Non-matrix tmat
         durations = durations.reshape(3, 5, 1)
-        with self.assertRaisesRegexp(ValueError, "be 2d"):
+        with self.assertRaisesRegex(ValueError, "be 2d"):
             hsmm = HSMMModel(MultinomialEmissions(emissions), durations, tmat)
 
         # Durations matrix with too many states
         durations = np.zeros((4, 4))
-        with self.assertRaisesRegexp(ValueError, "3 rows"):
+        with self.assertRaisesRegex(ValueError, "3 rows"):
             hsmm = HSMMModel(MultinomialEmissions(emissions), durations, tmat)
 
     def test_startprob_implicit(self):
@@ -260,7 +260,7 @@ class TestInitializationWithRVs(unittest.TestCase):
         tmat = np.eye(3)
         durations = []
 
-        with self.assertRaisesRegexp(ValueError, "length 3"):
+        with self.assertRaisesRegex(ValueError, "length 3"):
             HSMMModel(MultinomialEmissions(emissions), durations, tmat)
 
     def test_normalizations(self):
@@ -351,7 +351,7 @@ class TestGaussianHSMMModelSampling(unittest.TestCase):
             counts = Counter(
                 count for s, count in states_with_durations if s == state
             )
-            num_counts = sum(counts.viewvalues())
+            num_counts = sum(counts.values())
             for duration in range(n_durations):
                 np.testing.assert_almost_equal(
                     counts[duration + 1] / float(num_counts),
@@ -381,7 +381,7 @@ class TestGaussianHSMMModelSampling(unittest.TestCase):
 
         # Check that we observe the right state transitions: 0 -> 1 -> 2 -> 0
         unique_states = np.array([s for s, _ in groupby(states)])
-        expected_states = np.array(range(3) * len(states))
+        expected_states = np.array(list(range(3)) * len(states))
         expected_states = expected_states[unique_states[0]:]
         expected_states = expected_states[:len(unique_states)]
         np.testing.assert_array_equal(unique_states, expected_states)

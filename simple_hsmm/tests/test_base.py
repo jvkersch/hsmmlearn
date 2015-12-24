@@ -11,7 +11,7 @@ def load_data(fname):
     fname = os.path.join(os.path.dirname(__file__), fname)
     with open(fname) as fp:
         reader = csv.reader(fp)
-        reader.next()
+        next(reader)
         data = [float(row[0]) for row in reader]
     return np.array(data)
 

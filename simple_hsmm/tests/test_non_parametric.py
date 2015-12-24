@@ -1,3 +1,4 @@
+import six
 import unittest
 
 import numpy as np
@@ -12,7 +13,7 @@ class TestNonParametric(unittest.TestCase):
         samples = dist.rvs(size)
 
         self.assertEqual(samples.shape, (size, ))
-        self.assertItemsEqual(np.unique(samples), [1, 10])
+        six.assertCountEqual(self, [1, 10], np.unique(samples))
 
     def test_corner_cases(self):
         # TODO check message
