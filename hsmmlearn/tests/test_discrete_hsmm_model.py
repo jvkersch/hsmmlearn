@@ -12,6 +12,9 @@ from hsmmlearn.emissions import GaussianEmissions, MultinomialEmissions
 
 class TestHSMMModelSampling(unittest.TestCase):
 
+    def setUp(self):
+        np.random.seed(1234)
+
     def test_sample_single(self):
         emissions = np.array([
             [0.0, 1.0, 0.0, 0.0],
@@ -123,6 +126,9 @@ class TestHSMMModelSampling(unittest.TestCase):
 
 class TestHSMMModelDecoding(unittest.TestCase):
 
+    def setUp(self):
+        np.random.seed(1234)
+
     def test_unambiguous_decoding(self):
         emissions = np.array([
             [0.5, 0.5, 0.0, 0.0, 0.0, 0.0],
@@ -163,12 +169,12 @@ class TestInitialization(unittest.TestCase):
 
         # Non-square tmat
         tmat = np.ones((3, 4))
-        with six.assertRaisesRegex(self, ValueError, "shape \(3, 4\)"):
+        with self.assertRaises(ValueError):
             hsmm = HSMMModel(MultinomialEmissions(emissions), durations, tmat)
 
         # Non-matrix tmat
         tmat = np.ones((3, 4, 1))
-        with six.assertRaisesRegex(self, ValueError, "shape \(3, 4, 1\)"):
+        with self.assertRaises(ValueError):
             hsmm = HSMMModel(MultinomialEmissions(emissions), durations, tmat)
 
     # def test_emissions(self):
@@ -237,6 +243,9 @@ class TestInitialization(unittest.TestCase):
 
 class TestInitializationWithRVs(unittest.TestCase):
 
+    def setUp(self):
+        np.random.seed(1234)
+
     def test_list_of_rvs(self):
         emissions = np.ones((3, 7))
         tmat = np.eye(3)
@@ -284,6 +293,9 @@ class TestInitializationWithRVs(unittest.TestCase):
 
 
 class TestGaussianHSMMModelSampling(unittest.TestCase):
+
+    def setUp(self):
+        np.random.seed(1234)
 
     def test_sample_single(self):
         means = np.array([0.0, 5.0, 10.0])
@@ -389,6 +401,9 @@ class TestGaussianHSMMModelSampling(unittest.TestCase):
 
 
 class TestGaussianHSMMModelDecoding(unittest.TestCase):
+
+    def setUp(self):
+        np.random.seed(1234)
 
     def test_unambiguous_decoding(self):
         means = np.array([0.0, 5.0, 10.0])
