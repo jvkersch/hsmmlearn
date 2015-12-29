@@ -16,7 +16,6 @@ environment:
 
 cache:
   - c:\egg_cache
-  - c:\Downloads
 
 init:
   - ps: $Env:sdkbin = "C:\Program Files\Microsoft SDKs\Windows\" + $Env:sdkver + "\Bin"
