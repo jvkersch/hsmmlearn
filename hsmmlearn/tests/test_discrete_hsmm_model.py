@@ -163,12 +163,12 @@ class TestInitialization(unittest.TestCase):
 
         # Non-square tmat
         tmat = np.ones((3, 4))
-        with six.assertRaisesRegex(self, ValueError, "shape \(3, 4\)"):
+        with self.assertRaises(ValueError):
             hsmm = HSMMModel(MultinomialEmissions(emissions), durations, tmat)
 
         # Non-matrix tmat
         tmat = np.ones((3, 4, 1))
-        with six.assertRaisesRegex(self, ValueError, "shape \(3, 4, 1\)"):
+        with self.assertRaises(ValueError):
             hsmm = HSMMModel(MultinomialEmissions(emissions), durations, tmat)
 
     # def test_emissions(self):
