@@ -1,14 +1,51 @@
+""" Data descriptors for HSMM parameters.
+
+The parameters of a HSMM have to satisfy all sorts of properties that are
+straightforward but tedious to check (e.g. the transition matrix has to be
+square, the duration matrix must have just as many rows as there are states,
+etc). The job of the data descriptors in this module is to do this validation,
+so that the main :py:class:`HSMMModel` class doesn't have to worry about it.
+
+Each of the descriptors checks that its arguments are valid, and then sets
+one or more private attributes on the underlying :py:class:`HSMMModel`
+instance with the validated argument, or quantities related to it.
+
+"""
+
 import numpy as np
 
 from .emissions import AbstractEmissions
 
 
 class Durations(object):
-
+    """ Data descriptor for a durations distribution.
+    """
     def __get__(self, obj, type=None):
-        return obj._durations
+        """ Return the durations distribution.
+
+        Returns
+        -------
+        durations : numpy.ndarray, shape=(n_states, n_durations)
+            Durations matrix.
+
+        """
+        return getattr(obj, '_durations', None)
 
     def __set__(self, obj, durations):
+        """ Update the durations distribution with new durations.
+
+        Parameters
+        ----------
+        obj : hsmmlearn.hsmm.HSMMModel
+             The underlying HSMMModel.
+        durations : numpy.ndarray or list of random variables.
+             This can be either a numpy array, in which case the number of
+             rows must be equal to the number of hidden states, or a list
+             of scipy.stats discrete random variables. In the latter case,
+             the duration probabilities are obtained directly from the random
+             variables.
+
+        """
         if isinstance(durations, np.ndarray):
             durations_arr = np.asarray(durations)
             if (durations_arr.ndim != 2 or
@@ -33,10 +70,30 @@ class Durations(object):
 
 
 class Emissions(object):
+    """ Data descriptor for an emissions distribution.
+    """
     def __get__(self, obj, type=None):
-        return obj._emissions
+        """ Return the emissions distribution.
+
+        Returns
+        -------
+        emissions : hsmmlearn.emissions.AbstractEmissions
+            The emissions distribution.
+
+        """
+        return getattr(obj, '_emissions', None)
 
     def __set__(self, obj, emissions):
+        """ Set the emissions distribution.
+
+        Parameters
+        ----------
+        obj : hsmmlearn.hsmm.HSMMModel
+             The underlying HSMMModel.
+        emissions : hsmmlearn.emissions.AbstractEmissions
+            The emissions distribution.
+
+        """
         if not isinstance(emissions, AbstractEmissions):
             raise TypeError(
                 "Emissions parameter must be an instance of "
@@ -48,11 +105,34 @@ class Emissions(object):
 
 
 class TransitionMatrix(object):
+    """ Data descriptor for a transitions matrix.
+    """
 
     def __get__(self, obj, type=None):
-        return obj._tmat
+        """ Return the transition matrix.
+
+        Returns
+        -------
+        tmat : numpy.ndarray, shape=(n_states, n_states)
+           A transition matrix.
+
+        """
+        return getattr(obj, '_tmat', None)
 
     def __set__(self, obj, value):
+        """ Set a new transition matrix.
+
+        Parameters
+        ----------
+        obj : hsmmlearn.hsmm.HSMMModel
+             The underlying HSMMModel.
+        value : numpy.ndarray, shape=(n_states, n_states)
+             The new transition matrix. This must be a square matrix. If
+             a transition matrix was previously assigned to the HSMM,
+             the new transition matrix must have the same number of rows.
+
+        """
+
         tmat = self._validate_tmat(value)
         if hasattr(obj, '_tmat'):
             if obj._tmat.shape != tmat.shape:
