@@ -60,15 +60,22 @@ class HSMMModel(object):
         ----------
         emissions : hsmmlearn.emissions.AbstractEmissions
             Emissions distribution to use.
-        durations : numpy.ndarray, shape=(n_states, n_durations)
-            Durations matrix.
+        durations : numpy.ndarray or list of random variables.
+            Durations matrix with shape (n_states, n_durations). If a list of
+            random variables is passed in, all RVs must be subclasses of
+            ``scipy.stats.rv_discrete``. In this case, the duration
+            probabilities are obtained from the support of the RVs, from
+            1 to `support_cutoff`.
         tmat : numpy.ndarray, shape=(n_states, n_states)
             Transition matrix.
         startprob : numpy.ndarray, shape=(n_states, )
-            Initial probabilities for the Markov chain. If this is `None`, the
-            uniform distribution is assumed (all states are equally likely).
+            Initial probabilities for the Markov chain. If this is ``None``,
+            the uniform distribution is assumed (all states are equally
+            likely).
         support_cutoff : int
-            Maximal duration to encounter.
+            Maximal duration to take into account. This is used when passing in
+            a list of random variables for the durations, which will then be
+            sampled from 1 to ``support_cutoff``.
 
         """
         # TODO: move support_cutoff parameter to the durations property.

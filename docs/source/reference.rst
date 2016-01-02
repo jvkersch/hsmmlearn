@@ -1,22 +1,22 @@
 API reference
 =============
 
-hsmm
-----
+``hsmm`` module
+---------------
 
 .. autoclass:: hsmmlearn.hsmm.HSMMModel
    :members:
 
    .. automethod:: hsmmlearn.hsmm.HSMMModel.__init__
 
-emissions
----------
+``emissions`` module
+--------------------
 
 .. automodule:: hsmmlearn.emissions
    :members:
 
-properties
-----------
+``properties`` module
+---------------------
 
 .. autoclass:: hsmmlearn.properties.Durations
    :members: __get__, __set__
