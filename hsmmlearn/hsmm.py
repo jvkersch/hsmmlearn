@@ -9,25 +9,76 @@ class NoConvergenceError(Exception):
 
 
 class HSMMModel(object):
+    """HSMM model base class.
 
+    This class provides the basic functionality to work with hidden semi-Markov
+    models:
+
+    #. Sampling from a HSMM via the :py:func:`sample` method;
+    #. Fitting the parameters of a HSMM to a sequence of observations via the
+       :py:func:`fit` method.
+
+    These methods are agnostic as to what HSMM is being used: the specifics of
+    the model are all encapsulated in the properties `tmat`, `emissions`, and
+    `durations`, which control the transition matrix, the emission
+    distribution, and the duration distribution. In particular, the emission
+    distribution can be discrete or continuous.
+
+    """
+
+    #: Data descriptor for the transition matrix.
     tmat = TransitionMatrix()
 
+    #: Duration distribution matrix data descriptor. Each row corresponds to
+    #: a hidden state, with the `i`-th entry the probability of seeing duration
+    #: `i` in that state.
     durations = Durations()
 
+    #: Emission distribution data descriptor. Valid assignments to this
+    #: descriptor must be a subclass of
+    #: :py:class:`hsmmlearn.emissions.AbstractEmissions`.
     emissions = Emissions()
 
     @property
     def n_states(self):
+        """ The number of hidden states for this HSMM.
+        """
         return self._tmat.shape[0]
 
     @property
     def n_durations(self):
+        """ The number of durations for this HSMM.
+        """
         return self._durations.shape[1]
 
     def __init__(
             self, emissions, durations, tmat, startprob=None,
             support_cutoff=100):
+        """ Create a new HSMM instance.
 
+        Parameters
+        ----------
+        emissions : hsmmlearn.emissions.AbstractEmissions
+            Emissions distribution to use.
+        durations : numpy.ndarray or list of random variables.
+            Durations matrix with shape (n_states, n_durations). If a list of
+            random variables is passed in, all RVs must be subclasses of
+            ``scipy.stats.rv_discrete``. In this case, the duration
+            probabilities are obtained from the support of the RVs, from
+            1 to `support_cutoff`.
+        tmat : numpy.ndarray, shape=(n_states, n_states)
+            Transition matrix.
+        startprob : numpy.ndarray, shape=(n_states, )
+            Initial probabilities for the Markov chain. If this is ``None``,
+            the uniform distribution is assumed (all states are equally
+            likely).
+        support_cutoff : int
+            Maximal duration to take into account. This is used when passing in
+            a list of random variables for the durations, which will then be
+            sampled from 1 to ``support_cutoff``.
+
+        """
+        # TODO: move support_cutoff parameter to the durations property.
         self.tmat = tmat
 
         self.support_cutoff = support_cutoff
@@ -40,9 +91,23 @@ class HSMMModel(object):
         self._startprob = startprob
 
     def decode(self, obs):
-        """
-        Given a series of observations, find the most likely
-        internal states.
+        """ Find most likely internal states for a sequence of observations.
+
+        Given a sequence of observations, this method runs the Viterbi
+        algorithm to find the most likely sequence of corresponding internal
+        states. "Most likely" should be interpreted here (as in the classical
+        Viterbi algorithm) as the sequence of states that maximizes the joint
+        probability P(observations, states).
+
+        Parameters
+        ----------
+        obs : numpy.ndarray, shape=(n_obs, )
+            Observations.
+
+        Returns
+        -------
+        states : numpy.ndarray, shape=(n_obs, )
+            Reconstructed internal states.
 
         """
         likelihoods = self.emissions.likelihood(obs)
@@ -64,6 +129,16 @@ class HSMMModel(object):
 
     def sample(self, n_samples=1):
         """ Generate a random sample from the HSMM.
+
+        Parameters
+        ----------
+        n_samples : int
+             Number of samples to generate.
+
+        Returns
+        -------
+        observations, states : numpy.ndarray, shape=(n_samples, )
+            Random sample of observations and internal states.
 
         """
         state = np.random.choice(self.n_states, p=self._startprob)
@@ -103,7 +178,29 @@ class HSMMModel(object):
         return observations, states
 
     def fit(self, obs, max_iter=20, atol=1e-5, censoring=True):
-        """Fit HSMM parameters (in place), given a sequence of observations.
+        """ Fit the parameters of a HSMM to a given sequence of observations.
+
+        This method runs the expectation-maximization algorithm to adjust the
+        parameters of the HSMM to fit a given sequence of observations as well
+        as possible. The HSMM will be updated in place, unless an error occurs,
+        in which case the original HSMM is restored.
+
+        Parameters
+        ----------
+        obs : numpy.ndarray, shape=(n_samples, )
+            Sequence of observations.
+        max_iter : int
+            Maximum number of EM steps to do before terminating.
+        atol : float
+            Absolute tolerance to decide whether the EM algorithm has
+            converged.
+        censoring : bool
+            Whether to apply right-censoring.
+
+        Raises
+        ------
+        NoConvergenceError
+            If the algorithm terminated abnormally before converging.
 
         """
         obs = np.atleast_1d(obs)
