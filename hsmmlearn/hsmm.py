@@ -1,6 +1,7 @@
 import numpy as np
 
 from .base import _viterbi_impl, _fb_impl
+from .emissions import GaussianEmissions, MultinomialEmissions
 from .properties import Durations, Emissions, TransitionMatrix
 
 
@@ -298,3 +299,32 @@ class HSMMModel(object):
                 "Log-likelihood procession: {}.".format(step, log_likelihoods))
 
         return has_converged, llh
+
+
+# TODO the convenience wrappers should allow for the distribution parameters to
+# be updated...
+
+class GaussianHSMM(HSMMModel):
+    """ A HSMM class with Gaussian emissions.
+    """
+    def __init__(self, means, scales, durations, tmat,
+                 startprob=None, support_cutoff=100):
+
+        emissions = GaussianEmissions(means, scales)
+        super(GaussianHSMM, self).__init__(
+            emissions, durations, tmat,
+            startprob=startprob, support_cutoff=support_cutoff
+        )
+
+
+class MultinomialHSMM(HSMMModel):
+    """ A HSMM class with discrete multinomial emissions.
+    """
+    def __init__(self, probabilities, durations, tmat,
+                 startprob=None, support_cutoff=100):
+
+        emissions = MultinomialEmissions(probabilities)
+        super(MultinomialHSMM, self).__init__(
+            emissions, durations, tmat,
+            startprob=startprob, support_cutoff=support_cutoff
+        )
