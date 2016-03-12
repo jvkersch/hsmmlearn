@@ -4,6 +4,8 @@ hsmmlearn
 [![Linux build Status](https://travis-ci.org/jvkersch/hsmmlearn.svg?branch=master)](https://travis-ci.org/jvkersch/hsmmlearn)
 [![Windows build status](https://ci.appveyor.com/api/projects/status/elnatei2kavchwg1/branch/master?svg=true)](https://ci.appveyor.com/project/jvkersch/hsmmlearn)
 
+[![Coverage status](https://coveralls.io/repos/jvkersch/hsmmlearn/badge.png)](https://coveralls.io/repos/jvkersch/hsmmlearn/badge.png)
+
 hsmmlearn is a library for **unsupervised** learning of hidden semi-Markov
 models with explicit durations. It is a port of the
 [hsmm package](https://cran.r-project.org/web/packages/hsmm/) for R, and in
