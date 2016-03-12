@@ -190,3 +190,6 @@ pseudoxml:
 	$(SPHINXBUILD) -b pseudoxml $(ALLSPHINXOPTS) $(BUILDDIR)/pseudoxml
 	@echo
 	@echo "Build finished. The pseudo-XML files are in $(BUILDDIR)/pseudoxml."
+
+notebooks:
+	cd source && jupyter nbconvert --to rst ../../notebooks/tutorial.ipynb
