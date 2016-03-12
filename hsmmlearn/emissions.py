@@ -155,22 +155,22 @@ class GaussianEmissions(AbstractEmissions):
     dtype = np.float64
 
     def __init__(self, means, scales):
-        self._means = means
-        self._scales = scales
+        self.means = means
+        self.scales = scales
 
     def likelihood(self, obs):
         obs = np.squeeze(obs)
         # TODO: build in some check for the shape of the likelihoods, otherwise
         # this will silently fail and give the wrong results.
         return norm.pdf(obs,
-                        loc=self._means[:, np.newaxis],
-                        scale=self._scales[:, np.newaxis])
+                        loc=self.means[:, np.newaxis],
+                        scale=self.scales[:, np.newaxis])
 
     def sample_for_state(self, state, size=None):
-        return norm.rvs(self._means[state], self._scales[state], size)
+        return norm.rvs(self.means[state], self.scales[state], size)
 
     def copy(self):
-        return GaussianEmissions(self._means.copy(), self._scales.copy())
+        return GaussianEmissions(self.means.copy(), self.scales.copy())
 
     def reestimate(self, gamma, observations):
         p = np.sum(gamma * observations[np.newaxis, :], axis=1)
@@ -182,5 +182,5 @@ class GaussianEmissions(AbstractEmissions):
         variances = p / q
         new_scales = np.sqrt(variances)
 
-        self._means = new_means
-        self._scales = new_scales
+        self.means = new_means
+        self.scales = new_scales
