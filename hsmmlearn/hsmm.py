@@ -316,6 +316,22 @@ class GaussianHSMM(HSMMModel):
             startprob=startprob, support_cutoff=support_cutoff
         )
 
+    @property
+    def means(self):
+        return self.emissions.means
+
+    @means.setter
+    def means(self, value):
+        self.emissions.means = value
+
+    @property
+    def scales(self):
+        return self.emissions.scales
+
+    @scales.setter
+    def scales(self, value):
+        self.emissions.scales = value
+
 
 class MultinomialHSMM(HSMMModel):
     """ A HSMM class with discrete multinomial emissions.
