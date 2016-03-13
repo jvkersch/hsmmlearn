@@ -6,6 +6,7 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
+   source/tutorial	      
    source/reference
 
 Indices and tables

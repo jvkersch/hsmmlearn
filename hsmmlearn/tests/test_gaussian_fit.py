@@ -47,10 +47,10 @@ class TestGaussianFit(unittest.TestCase):
                       [1.0, 0.0, 0.0, 0.0]])
         )
         np.testing.assert_array_almost_equal(
-            hsmm.emissions._means,
+            hsmm.emissions.means,
             np.array([0.03943846, 5.34205421, 4.3634765])
         )
         np.testing.assert_array_almost_equal(
-            hsmm.emissions._scales,
+            hsmm.emissions.scales,
             np.array([1.17872032e+00, 7.51486350e-01, 3.89204133e-07])
         )
