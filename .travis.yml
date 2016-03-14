@@ -17,6 +17,7 @@ before_install:
   - sudo apt-get install gfortran
 install:
   - pip install --upgrade -r requirements.txt
+  - pip install --upgrade -r travis_requirements.txt
   - python setup.py develop
 script:
   - python -m unittest discover -v
