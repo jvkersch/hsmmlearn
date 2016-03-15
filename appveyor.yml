@@ -17,7 +17,8 @@ environment:
 os: Visual Studio 2015
 
 cache:
-  - c:\egg_cache
+  # Update this file to invalidate the build cache
+  - c:\egg_cache -> appveyor.yml
 
 init:
   - ps: $Env:sdkbin = "C:\Program Files\Microsoft SDKs\Windows\" + $Env:sdkver + "\Bin"
