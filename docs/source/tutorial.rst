@@ -88,7 +88,7 @@ sequence of internal states and observations:
 
 .. parsed-literal::
 
-    [0 0 0 0 2 2 0 0 0 0 1 1 1 0 2 2 0 0 0 0]
+    [2 2 1 1 1 2 2 0 0 0 0 2 2 1 1 1 2 2 1 1]
 
 
 .. code:: python
@@ -98,11 +98,10 @@ sequence of internal states and observations:
 
 .. parsed-literal::
 
-    [  1.32013024e+00   6.84474202e-01  -1.55779464e+00   5.15478779e-01
-       9.67619876e+00   1.05257220e+01  -9.62818048e-01   3.45659812e-01
-       2.28329729e-01  -6.19651764e-01   2.61247701e+00   5.02372434e+00
-       5.15475563e+00  -1.07439524e+00   1.09060924e+01   9.39818450e+00
-       2.79495502e-01  -6.80645093e-03  -6.04861034e-01   6.08955333e-01]
+    [ 10.52314041   9.86235128   4.07406132   5.44132853   5.76402099
+      11.43504019  10.13734856  -0.93207824   0.75532059  -1.29944693
+      -0.47906227   9.9658948   10.36830046   3.4782257    4.58492773
+       5.10710389   8.49856484  11.92186325   5.41462254   3.9717193 ]
 
 
 .. code:: python
@@ -116,7 +115,7 @@ sequence of internal states and observations:
 
 .. parsed-literal::
 
-    [<matplotlib.lines.Line2D at 0x1120e7f50>]
+    [<matplotlib.lines.Line2D at 0x1131efdd0>]
 
 
 
@@ -181,7 +180,7 @@ on the basis of the inferred durations alone).
 
 .. parsed-literal::
 
-    18
+    10
 
 
 
@@ -197,7 +196,7 @@ on the basis of the inferred durations alone).
 
 .. parsed-literal::
 
-    [<matplotlib.lines.Line2D at 0x112198cd0>]
+    [<matplotlib.lines.Line2D at 0x113d12d90>]
 
 
 
@@ -298,4 +297,176 @@ Let's check that this defines indeed an HSMM with Laplacian output PDFs:
 
 
 Looks indeed like a Laplacian distribution!
+
+Model inference
+---------------
+
+In the next section, we'll tackle the "third question" outlined by
+Rabiner: given a sequence of observed data, what is the "most likely"
+model that could have given rise to these observations? To achieve this,
+we'll employ an iterative procedure known as the expectation
+maximization algorithm, which adjusts the transition/emission/duration
+data to generate the optimal model.
+
+We start by sampling from a Gaussian HSMM that has three states, with
+very clearly separated durations.
+
+.. code:: python
+
+    from hsmmlearn.hsmm import GaussianHSMM
+    
+    durations = np.zeros((3, 10)) # XXXX
+    durations[:, :] = 0.05
+    durations[0, 1] = durations[1, 5] = durations[2, 9] = 0.55
+    
+    tmat = np.array([
+        [0.0, 0.5, 0.5],
+        [0.3, 0.0, 0.7],
+        [0.6, 0.4, 0.0]
+    ])
+    
+    means = np.array([0.0, 5.0, 10.0])
+    scales = np.ones_like(means)
+    
+    hsmm = GaussianHSMM(
+        means, scales, durations, tmat,
+    )
+
+.. code:: python
+
+    hsmm.durations
+
+
+
+
+.. parsed-literal::
+
+    array([[ 0.05,  0.55,  0.05,  0.05,  0.05,  0.05,  0.05,  0.05,  0.05,
+             0.05],
+           [ 0.05,  0.05,  0.05,  0.05,  0.05,  0.55,  0.05,  0.05,  0.05,
+             0.05],
+           [ 0.05,  0.05,  0.05,  0.05,  0.05,  0.05,  0.05,  0.05,  0.05,
+             0.55]])
+
+
+
+.. code:: python
+
+    observations, states = hsmm.sample(200)
+
+.. code:: python
+
+    fig, ax = plt.subplots(figsize=(15, 3))
+    ax.plot(means[states], 'r', linewidth=2, alpha=.8)
+    ax.plot(observations)
+
+
+
+
+.. parsed-literal::
+
+    [<matplotlib.lines.Line2D at 0x113f3bf10>]
+
+
+
+
+.. image:: tutorial_files/tutorial_33_1.png
+
+
+The plot shows clearly that the durations are separated: state 0, with
+mean 0.0, has very short durations, while states 1 and 2 have much
+longer durations.
+
+Having sampled from the HSMM, we'll now forget our duration distribution
+and set up a new HSMM with a flat duration distribution.
+
+.. code:: python
+
+    equal_prob_durations = np.full((3, 10), 0.1)
+    new_hsmm = GaussianHSMM(
+        means, scales, equal_prob_durations, tmat,
+    )
+
+.. code:: python
+
+    equal_prob_durations
+
+
+
+
+.. parsed-literal::
+
+    array([[ 0.1,  0.1,  0.1,  0.1,  0.1,  0.1,  0.1,  0.1,  0.1,  0.1],
+           [ 0.1,  0.1,  0.1,  0.1,  0.1,  0.1,  0.1,  0.1,  0.1,  0.1],
+           [ 0.1,  0.1,  0.1,  0.1,  0.1,  0.1,  0.1,  0.1,  0.1,  0.1]])
+
+
+
+Using the ``.fit`` method, we'll run the expectation-maximization
+algorithm on our new duration-agnostic HSMM. This will adjust the
+parameters of the HSMM in place, to best match the given observations.
+
+.. code:: python
+
+    # Fit returns a bool to indicate whether the EM algorithm converged,
+    # and the log-likelihood after the adjustments are made.
+    new_hsmm.fit(observations)
+
+
+
+
+.. parsed-literal::
+
+    (True, -352.16412850351435)
+
+
+
+If we examine the adjusted duration distribution, we see that this
+reproduces to some extent the original distribution, with very
+pronounced probabilities for duration 2 in state 0, duration 6 in state
+1, and duration 10 in state 2.
+
+.. code:: python
+
+    np.set_printoptions(precision=1)
+    print new_hsmm.durations
+    np.set_printoptions()
+
+
+.. parsed-literal::
+
+    [[  7.1e-35   5.4e-01   1.2e-31   1.5e-01   4.4e-39   2.1e-01   7.2e-08
+        1.0e-01   5.9e-08   5.9e-08]
+     [  1.0e-01   5.5e-49   3.1e-49   3.2e-51   1.0e-01   5.0e-01   1.2e-18
+        1.0e-01   1.0e-01   1.0e-01]
+     [  3.7e-44   9.0e-56   5.8e-41   2.5e-01   8.4e-02   8.3e-02   8.3e-02
+        3.8e-57   8.3e-02   4.2e-01]]
+
+
+In tandem with the duration distributions, the other parameters have
+also changed. The transition matrix has become a little more pronounced
+to emphasize the transitions between different states, and the locations
+and scales of the emission PDFs have shifted a bit.
+
+.. code:: python
+
+    np.set_printoptions(precision=1)
+    print 'New transition matrices:'
+    print new_hsmm.tmat
+    print 'New emission parameters:'
+    print 'Means:', new_hsmm.means
+    print 'Scales:', new_hsmm.scales
+    np.set_printoptions()
+
+
+.. parsed-literal::
+
+    New transition matrices:
+    [[ 0.   0.4  0.6]
+     [ 0.5  0.   0.5]
+     [ 0.6  0.4  0. ]]
+    New emission parameters:
+    Means: [ -0.2   5.1  10.1]
+    Scales: [ 1.2  0.9  0.9]
+
 
