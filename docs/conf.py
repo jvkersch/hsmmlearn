@@ -18,11 +18,17 @@ import os
 # Avoid using C libraries on RTD
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 if on_rtd:
-    import mock
+    from mock import Mock as MagicMock
 
-    MOCK_MODULES = ['numpy', 'scipy', 'matplotlib', 'matplotlib.pyplot']
+    class Mock(MagicMock):
+        @classmethod
+        def __getattr__(cls, name):
+            return MagicMock()
+
+    MOCK_MODULES = ['numpy', 'scipy', 'scipy.stats', 'matplotlib',
+                    'matplotlib.pyplot', 'hsmmlearn.base']
     for mod_name in MOCK_MODULES:
-        sys.modules[mod_name] = mock.Mock()
+        sys.modules[mod_name] = Mock()
 
 
 # If extensions (or modules to document with autodoc) are in another directory,
