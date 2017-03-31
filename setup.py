@@ -2,20 +2,30 @@
 """
 import glob
 
+import os
 import setuptools  # noqa
 
 from distutils.core import setup
-from Cython.Build import cythonize
 from distutils.extension import Extension
 
-sources = (
+SOURCES = (
     ["hsmmlearn/base.pyx"] + glob.glob('hsmmlearn/_hsmm/src/*.cpp')
 )
-extensions = [
-    Extension("hsmmlearn.base", sources, language="c++")
-]
 
-import hsmmlearn
+
+def get_extension_modules():
+    # ReadTheDocs has trouble with C extension modules, so don't build the
+    # Cython modules.
+    on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
+    if on_rtd:
+        return []
+    else:
+        from Cython.Build import cythonize
+        extensions = [
+            Extension("hsmmlearn.base", SOURCES, language="c++")
+        ]
+        return cythonize(extensions)
+
 
 CLASSIFIERS = [
     "Development Status :: 3 - Alpha",
@@ -39,15 +49,13 @@ MAINTAINER = 'Joris Vankerschaver'
 MAINTAINER_EMAIL = 'Joris.Vankerschaver@gmail.com'
 LICENSE = 'GPL v3'
 
-VERSION = hsmmlearn._version
-
 setup(
     name='hsmmlearn',
-    ext_modules=cythonize(extensions),
+    ext_modules=get_extension_modules(),
     packages=['hsmmlearn'],
     package_data={'hsmmlearn': ['base.pyx']},
     classifiers=CLASSIFIERS,
-    version=VERSION,
+    version='0.1.0',
     description=DESCRIPTION,
     long_description=LONG_DESCRIPTION,
     maintainer=MAINTAINER,
