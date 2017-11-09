@@ -17,51 +17,6 @@ void ViterbiImpl(int tauPara, int JPara, int MPara,
     double Observ, x = 0;
     bool first, first_i, first_alpha;
 
-    // output all function parameters to file
-    if (run_mode == STORE_VIT) {
-        ofstream ofs(PARA_FNAME.c_str());
-        if (!ofs) {
-            cerr << "unable to open file: " << PARA_FNAME << endl;
-            exit(0);
-        }
-
-        // output tau, J, and M
-        ofs << 0 << endl;   // dummy output for CensoringPara
-        ofs << tauPara << endl;
-        ofs << JPara << endl;
-        ofs << MPara << endl << endl;
-
-        // output d
-        for (int j = 0; j < JPara; ++j) {
-            for (int m = 0; m < MPara; ++m) {
-                ofs << j << " " << m << " " << dPara[j * MPara + m] << endl;
-            }
-        }
-        ofs << endl;
-
-        // output p
-        for (int j = 0; j < JPara; ++j) {
-            for (int k = 0; k < JPara; ++k) {
-                ofs << j << " " << k << " " << pPara[j * JPara + k] << endl;
-            }
-        }
-        ofs << endl;
-
-        // output pi
-        for (int j = 0; j < JPara; ++j) {
-            ofs << j << " " << piPara[j] << endl;
-        }
-        ofs << endl;
-
-        // output pdf
-        for (int j = 0; j < JPara; ++j) {
-            for (int t = 0; t < tauPara; ++t) {
-                ofs << j << " " << t << " " << pdfPara[j * tauPara + t] << endl;
-            }
-        }
-        ofs << endl;
-    }
-
     InitParaAndVar(dummyInt, tauPara, JPara, MPara, dPara, pPara, piPara, pdfPara);
 
     CalcStoreD();
