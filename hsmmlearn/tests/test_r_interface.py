@@ -6,8 +6,51 @@ import unittest
 import numpy as np
 import numpy.testing as nptest
 
-from hsmmlearn.r_interface import hsmm_sim
+from hsmmlearn.r_interface import hsmm, hsmm_sim
 
+
+class TestHSMM(unittest.TestCase):
+
+    def test_r_data(self):
+        # Given
+        n = 2000
+        od = "norm"
+        rd = "log"
+        pi_par = [1.0/3]*3
+        tpm_par = np.array([[0, 0.5, 0.5], [0.7, 0, 0.3], [0.8, 0.2, 0]])
+        rd_par = {'p': [0.98, 0.98, 0.99]}
+        od_par = {'mean': [-1.5, 0.0, 1.5], 'var': [0.5, 0.6, 0.8]}
+        seed = 3539
+        obs, _ = hsmm_sim(n, od, rd, pi_par, tpm_par, rd_par, od_par, seed)
+
+        # When
+        itr, logl, para, ctrl = hsmm(
+            obs, od, od_par, rd, rd_par, pi_par, tpm_par
+        )
+
+        # Then
+        self.assertTrue(ctrl['solution_reached'])
+        self.assertEqual(ctrl['error'], 0)
+        self.assertEqual(itr, 28)
+        self.assertAlmostEqual(logl, -2671.790242590307)
+
+        nptest.assert_allclose(
+            para['tpm'], np.array([
+                [0.0000000, 0.5191888, 0.4808112],
+                [0.8148501, 0.0000000, 0.1851499],
+                [0.8951527, 0.1048473, 0.0000000]]),
+            rtol=1e-5, atol=1e-5
+        )
+        nptest.assert_allclose(
+            para['rd']['p'], np.array([0.9881984, 0.9588898, 0.9905475]),
+            rtol=1e-5, atol=1e-5)
+        nptest.assert_allclose(
+            para['od']['mean'], np.array([-1.54168985, 0.08857843, 1.52942672]),
+            rtol=1e-5, atol=1e-5)
+        nptest.assert_allclose(
+            para['od']['var'], np.array([0.4780348, 0.6139798, 0.7984119]),
+            rtol=1e-5, atol=1e-5)
+            
 
 class TestHSMMSim(unittest.TestCase):
 
@@ -35,3 +78,5 @@ class TestHSMMSim(unittest.TestCase):
         nptest.assert_array_equal(
             path, np.array([2, 2, 2, 2, 2, 2, 2, 1, 1, 2])
         )
+
+
