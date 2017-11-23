@@ -6,9 +6,16 @@ import unittest
 import numpy as np
 import numpy.testing as nptest
 
-from hsmmlearn.r_interface import hsmm, hsmm_sim
+try:
+    from hsmmlearn.r_interface import hsmm, hsmm_sim
+    HAS_R_SUPPORT = True
+except ImportError:
+    HAS_R_SUPPORT = False
+
+skip_no_r = unittest.skipIf(not HAS_R_SUPPORT, "No R support")
 
 
+@skip_no_r
 class TestHSMM(unittest.TestCase):
 
     def test_r_data(self):
@@ -50,8 +57,9 @@ class TestHSMM(unittest.TestCase):
         nptest.assert_allclose(
             para['od']['var'], np.array([0.4780348, 0.6139798, 0.7984119]),
             rtol=1e-5, atol=1e-5)
-            
 
+
+@skip_no_r
 class TestHSMMSim(unittest.TestCase):
 
     def test_r_data(self):
