@@ -8,7 +8,7 @@
 #include <fstream>
 #include <iostream>
 
-#ifdef _WIN32 || _WIN64
+#ifdef _MSC_VER
 #include <minmax.h>
 #endif
 
