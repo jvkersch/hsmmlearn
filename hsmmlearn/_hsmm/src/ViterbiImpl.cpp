@@ -8,7 +8,9 @@
 #include <fstream>
 #include <iostream>
 
-
+#ifdef _WIN32 || _WIN64
+#include <minmax.h>
+#endif
 
 void ViterbiImpl(int tauPara, int JPara, int MPara,
                  double dPara[], double pPara[], double piPara[], double pdfPara[], int hiddenStatesPara[])
