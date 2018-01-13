@@ -114,9 +114,12 @@ class MultinomialEmissions(AbstractEmissions):
 
     def _update(self, probabilities):
         _probabilities = np.asarray(probabilities)
+        # clip small neg residual (GH #34)
+        _probabilities[_probabilities < 0] = 0
+
         xs = np.arange(_probabilities.shape[1])
         _probability_rvs = [
-            NonParametricDistribution(xs, ps) for ps in probabilities
+            NonParametricDistribution(xs, ps) for ps in _probabilities
         ]
         self._probabilities = _probabilities
         self._probability_rvs = _probability_rvs
