@@ -1,12 +1,10 @@
 """ Hidden semi-Markov models with explicit durations in Python.
 """
 import glob
-
 import os
 
-from setuptools import find_packages
-from distutils.core import setup
-from distutils.extension import Extension
+from setuptools import find_packages, setup, Extension
+
 
 SOURCES = (
     ["hsmmlearn/base.pyx"] + glob.glob('hsmmlearn/_hsmm/src/*.cpp')
@@ -52,10 +50,12 @@ REQUIREMENTS = [
     
 
 DESCRIPTION = __doc__
-LONG_DESCRIPTION = open('README.md').read()
 MAINTAINER = 'Joris Vankerschaver'
 MAINTAINER_EMAIL = 'Joris.Vankerschaver@gmail.com'
 LICENSE = 'GPL v3'
+
+with open('README.md', encoding="utf-8") as handle:
+    LONG_DESCRIPTION = handle.read()
 
 setup(
     name='hsmmlearn',
