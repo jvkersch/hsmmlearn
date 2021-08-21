@@ -3,8 +3,8 @@
 import glob
 
 import os
-import setuptools  # noqa
 
+from setuptools import find_packages
 from distutils.core import setup
 from distutils.extension import Extension
 
@@ -43,6 +43,14 @@ CLASSIFIERS = [
     "Programming Language :: Python :: 3.5",
 ]
 
+REQUIREMENTS = [
+    "cython",
+    "numpy",
+    "six",
+    "scipy",
+]
+    
+
 DESCRIPTION = __doc__
 LONG_DESCRIPTION = open('README.md').read()
 MAINTAINER = 'Joris Vankerschaver'
@@ -52,8 +60,9 @@ LICENSE = 'GPL v3'
 setup(
     name='hsmmlearn',
     ext_modules=get_extension_modules(),
-    packages=['hsmmlearn'],
-    package_data={'hsmmlearn': ['base.pyx']},
+    packages=find_packages(include=["hsmmlearn", "hsmmlearn.*"]),
+    include_package_data=True,
+    install_requires=REQUIREMENTS,
     classifiers=CLASSIFIERS,
     version='0.1.0',
     description=DESCRIPTION,
