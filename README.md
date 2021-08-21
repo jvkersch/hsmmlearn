@@ -17,24 +17,17 @@ fact wraps the same underlying C++ library.
 Install
 -------
 
-`hsmmlearn` supports Python 2.7 and Python 3.4 and up. After cloning the
-repository, first install the requirements
-```bash
-pip install -r requirements.txt
+`hsmmlearn` supports Python 3.6 and up. After cloning the
+repository, you can install the package by running 
+```console
+pip install .
 ```
-Then run either
-```bash
-python setup.py develop
-```
-or
-```bash
-python setup.py install
-```
-to install the package from source.
+Note the dot (`.`) at the end of the command, which is part of the command. You
+will need a C++ compiler to build and install the package.
 
 To run the unit tests, do
 ```console
-python -m unittest discover -v .
+python -m unittest discover -v hsmmlearn
 ```
 
 Building the documentation
