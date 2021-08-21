@@ -1,3 +1,0 @@
-coverage
-coveralls
-rpy2==2.8.2  # to test the R interface
