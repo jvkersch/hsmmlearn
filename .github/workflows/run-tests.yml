@@ -26,6 +26,5 @@ jobs:
       run: |
         mkdir testdir
     - name: Test package
-      with:
-        working-directory: testdir
       run: python -m unittest discover -v hsmmlearn
+      working-directory: testdir
