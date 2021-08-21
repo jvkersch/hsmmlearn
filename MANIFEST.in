@@ -1,2 +1,3 @@
 include README.md
 recursive-include hsmmlearn *.cpp *.h
+recursive-include hsmmlearn *.csv
