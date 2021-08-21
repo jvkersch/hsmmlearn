@@ -28,4 +28,4 @@ jobs:
     - name: Test package
       with:
         working-directory: testdir
-        run: python -m unittest discover -v hsmmlearn
+      run: python -m unittest discover -v hsmmlearn
